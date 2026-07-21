@@ -9,38 +9,222 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TournamentsRouteImport } from './routes/tournaments'
+import { Route as PlayersRouteImport } from './routes/players'
+import { Route as CompareRouteImport } from './routes/compare'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TournamentsIdRouteImport } from './routes/tournaments.$id'
+import { Route as PlayersIdRouteImport } from './routes/players.$id'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminTournamentsRouteImport } from './routes/_authenticated/admin.tournaments'
+import { Route as AuthenticatedAdminPlayersRouteImport } from './routes/_authenticated/admin.players'
+import { Route as AuthenticatedAdminTournamentsIdRouteImport } from './routes/_authenticated/admin.tournaments.$id'
 
+const TournamentsRoute = TournamentsRouteImport.update({
+  id: '/tournaments',
+  path: '/tournaments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayersRoute = PlayersRouteImport.update({
+  id: '/players',
+  path: '/players',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TournamentsIdRoute = TournamentsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TournamentsRoute,
+} as any)
+const PlayersIdRoute = PlayersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PlayersRoute,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminTournamentsRoute =
+  AuthenticatedAdminTournamentsRouteImport.update({
+    id: '/tournaments',
+    path: '/tournaments',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminPlayersRoute =
+  AuthenticatedAdminPlayersRouteImport.update({
+    id: '/players',
+    path: '/players',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminTournamentsIdRoute =
+  AuthenticatedAdminTournamentsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedAdminTournamentsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/compare': typeof CompareRoute
+  '/players': typeof PlayersRouteWithChildren
+  '/tournaments': typeof TournamentsRouteWithChildren
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/players/$id': typeof PlayersIdRoute
+  '/tournaments/$id': typeof TournamentsIdRoute
+  '/admin/players': typeof AuthenticatedAdminPlayersRoute
+  '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/admin/tournaments/$id': typeof AuthenticatedAdminTournamentsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/compare': typeof CompareRoute
+  '/players': typeof PlayersRouteWithChildren
+  '/tournaments': typeof TournamentsRouteWithChildren
+  '/players/$id': typeof PlayersIdRoute
+  '/tournaments/$id': typeof TournamentsIdRoute
+  '/admin/players': typeof AuthenticatedAdminPlayersRoute
+  '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/admin/tournaments/$id': typeof AuthenticatedAdminTournamentsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/compare': typeof CompareRoute
+  '/players': typeof PlayersRouteWithChildren
+  '/tournaments': typeof TournamentsRouteWithChildren
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/players/$id': typeof PlayersIdRoute
+  '/tournaments/$id': typeof TournamentsIdRoute
+  '/_authenticated/admin/players': typeof AuthenticatedAdminPlayersRoute
+  '/_authenticated/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/admin/tournaments/$id': typeof AuthenticatedAdminTournamentsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/compare'
+    | '/players'
+    | '/tournaments'
+    | '/admin'
+    | '/players/$id'
+    | '/tournaments/$id'
+    | '/admin/players'
+    | '/admin/tournaments'
+    | '/admin/'
+    | '/admin/tournaments/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/compare'
+    | '/players'
+    | '/tournaments'
+    | '/players/$id'
+    | '/tournaments/$id'
+    | '/admin/players'
+    | '/admin/tournaments'
+    | '/admin'
+    | '/admin/tournaments/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/compare'
+    | '/players'
+    | '/tournaments'
+    | '/_authenticated/admin'
+    | '/players/$id'
+    | '/tournaments/$id'
+    | '/_authenticated/admin/players'
+    | '/_authenticated/admin/tournaments'
+    | '/_authenticated/admin/'
+    | '/_authenticated/admin/tournaments/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  CompareRoute: typeof CompareRoute
+  PlayersRoute: typeof PlayersRouteWithChildren
+  TournamentsRoute: typeof TournamentsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tournaments': {
+      id: '/tournaments'
+      path: '/tournaments'
+      fullPath: '/tournaments'
+      preLoaderRoute: typeof TournamentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/players': {
+      id: '/players'
+      path: '/players'
+      fullPath: '/players'
+      preLoaderRoute: typeof PlayersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +232,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tournaments/$id': {
+      id: '/tournaments/$id'
+      path: '/$id'
+      fullPath: '/tournaments/$id'
+      preLoaderRoute: typeof TournamentsIdRouteImport
+      parentRoute: typeof TournamentsRoute
+    }
+    '/players/$id': {
+      id: '/players/$id'
+      path: '/$id'
+      fullPath: '/players/$id'
+      preLoaderRoute: typeof PlayersIdRouteImport
+      parentRoute: typeof PlayersRoute
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/tournaments': {
+      id: '/_authenticated/admin/tournaments'
+      path: '/tournaments'
+      fullPath: '/admin/tournaments'
+      preLoaderRoute: typeof AuthenticatedAdminTournamentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/players': {
+      id: '/_authenticated/admin/players'
+      path: '/players'
+      fullPath: '/admin/players'
+      preLoaderRoute: typeof AuthenticatedAdminPlayersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/tournaments/$id': {
+      id: '/_authenticated/admin/tournaments/$id'
+      path: '/$id'
+      fullPath: '/admin/tournaments/$id'
+      preLoaderRoute: typeof AuthenticatedAdminTournamentsIdRouteImport
+      parentRoute: typeof AuthenticatedAdminTournamentsRoute
+    }
   }
 }
 
+interface AuthenticatedAdminTournamentsRouteChildren {
+  AuthenticatedAdminTournamentsIdRoute: typeof AuthenticatedAdminTournamentsIdRoute
+}
+
+const AuthenticatedAdminTournamentsRouteChildren: AuthenticatedAdminTournamentsRouteChildren =
+  {
+    AuthenticatedAdminTournamentsIdRoute: AuthenticatedAdminTournamentsIdRoute,
+  }
+
+const AuthenticatedAdminTournamentsRouteWithChildren =
+  AuthenticatedAdminTournamentsRoute._addFileChildren(
+    AuthenticatedAdminTournamentsRouteChildren,
+  )
+
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminPlayersRoute: typeof AuthenticatedAdminPlayersRoute
+  AuthenticatedAdminTournamentsRoute: typeof AuthenticatedAdminTournamentsRouteWithChildren
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminPlayersRoute: AuthenticatedAdminPlayersRoute,
+  AuthenticatedAdminTournamentsRoute:
+    AuthenticatedAdminTournamentsRouteWithChildren,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
+interface PlayersRouteChildren {
+  PlayersIdRoute: typeof PlayersIdRoute
+}
+
+const PlayersRouteChildren: PlayersRouteChildren = {
+  PlayersIdRoute: PlayersIdRoute,
+}
+
+const PlayersRouteWithChildren =
+  PlayersRoute._addFileChildren(PlayersRouteChildren)
+
+interface TournamentsRouteChildren {
+  TournamentsIdRoute: typeof TournamentsIdRoute
+}
+
+const TournamentsRouteChildren: TournamentsRouteChildren = {
+  TournamentsIdRoute: TournamentsIdRoute,
+}
+
+const TournamentsRouteWithChildren = TournamentsRoute._addFileChildren(
+  TournamentsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthRoute: AuthRoute,
+  CompareRoute: CompareRoute,
+  PlayersRoute: PlayersRouteWithChildren,
+  TournamentsRoute: TournamentsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
