@@ -14,16 +14,219 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      match_stats: {
+        Row: {
+          created_at: string
+          damage: number
+          id: string
+          kills: number
+          match_id: string
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          damage?: number
+          id?: string
+          kills?: number
+          match_id: string
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          damage?: number
+          id?: string
+          kills?: number
+          match_id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_stats_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          created_at: string
+          id: string
+          match_number: number
+          tournament_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_number: number
+          tournament_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_number?: number
+          tournament_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          created_at: string
+          id: string
+          ign: string
+          join_date: string
+          photo_url: string | null
+          role: string
+          status: string
+          uid: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ign: string
+          join_date?: string
+          photo_url?: string | null
+          role: string
+          status?: string
+          uid?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ign?: string
+          join_date?: string
+          photo_url?: string | null
+          role?: string
+          status?: string
+          uid?: string | null
+        }
+        Relationships: []
+      }
+      tournament_achievements: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          kind: string
+          tournament_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          kind: string
+          tournament_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          kind?: string
+          tournament_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_achievements_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournaments: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          mvp_player_id: string | null
+          name: string
+          num_matches: number
+          organizer: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          mvp_player_id?: string | null
+          name: string
+          num_matches?: number
+          organizer?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          mvp_player_id?: string | null
+          name?: string
+          num_matches?: number
+          organizer?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournaments_mvp_player_id_fkey"
+            columns: ["mvp_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +353,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const
