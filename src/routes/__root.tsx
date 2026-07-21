@@ -78,19 +78,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Team SNOVA ESP — Esports Performance Dashboard" },
+      { title: "TEAM SNOVA ESP" },
       {
         name: "description",
         content:
           "Official Team SNOVA ESP performance dashboard — roster, tournaments, player stats, MVPs and leaderboards.",
       },
-      { property: "og:title", content: "Team SNOVA ESP" },
+      { property: "og:title", content: "TEAM SNOVA ESP" },
       {
         property: "og:description",
-        content: "Live esports team performance dashboard for Team SNOVA ESP.",
+        content: "Official Team SNOVA ESP performance dashboard — roster, tournaments, player stats, MVPs and leaderboards.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "TEAM SNOVA ESP" },
+      { name: "twitter:description", content: "Official Team SNOVA ESP performance dashboard — roster, tournaments, player stats, MVPs and leaderboards." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/8BzZ7gO22DWG5xvk59o45YgZoyy2/social-images/social-1784641291564-file_00000000803c82089c2f656efde038e6.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/8BzZ7gO22DWG5xvk59o45YgZoyy2/social-images/social-1784641291564-file_00000000803c82089c2f656efde038e6.webp" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
