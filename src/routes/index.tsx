@@ -36,34 +36,31 @@ function Home() {
   return (
     <Layout>
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl glass p-6 md:p-10 mb-8">
-        <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-neon-soft blur-3xl animate-float" />
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-neon">
-            <Zap className="h-3 w-3" /> Live Team Dashboard
-          </div>
-          <h1 className="mt-4 text-4xl md:text-6xl font-black tracking-tight">
-            <span className="gradient-text">TEAM SNOVA</span>
-            <span className="text-foreground/90"> ESP</span>
-          </h1>
-          <p className="mt-3 max-w-xl text-sm md:text-base text-muted-foreground">
-            Every kill. Every match. Every tournament. Follow the squad's rise across the
-            competitive circuit.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Link
-              to="/players"
-              className="inline-flex items-center gap-2 rounded-full bg-neon text-neon-foreground px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow"
-            >
-              View Roster <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/tournaments"
-              className="inline-flex items-center gap-2 rounded-full glass px-4 py-2 text-sm font-semibold hover:bg-white/5"
-            >
-              Tournaments
-            </Link>
-          </div>
+      <section className="rounded-2xl glass p-6 md:p-10 mb-8">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-neon">
+          <Zap className="h-3 w-3" /> Live Team Dashboard
+        </div>
+        <h1 className="mt-4 text-5xl md:text-7xl font-display tracking-tight">
+          <span className="gradient-text">Team Snova</span>
+          <span className="text-muted-foreground italic"> Esp</span>
+        </h1>
+        <p className="mt-4 max-w-xl text-sm md:text-base text-muted-foreground leading-relaxed">
+          Every kill. Every match. Every tournament. Follow the squad's rise across the
+          competitive circuit.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Link
+            to="/players"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+          >
+            View Roster <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            to="/tournaments"
+            className="inline-flex items-center gap-2 rounded-md border border-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/5"
+          >
+            Tournaments
+          </Link>
         </div>
       </section>
 
