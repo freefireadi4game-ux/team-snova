@@ -22,7 +22,7 @@ export type Tournament = {
   created_at: string;
 };
 
-export type Match = { id: string; tournament_id: string; match_number: number };
+export type Match = { id: string; tournament_id: string; match_number: number; position: number | null };
 export type MatchStat = {
   id: string;
   match_id: string;
@@ -126,3 +126,19 @@ export function rating(avgKills: number): "Excellent" | "Good" | "Average" | "Ne
   if (avgKills >= 2) return "Average";
   return "Needs Improvement";
 }
+
+// Tournament placement points table
+export const POSITION_POINTS: Record<number, number> = {
+  1: 12, 2: 9, 3: 8, 4: 7, 5: 6, 6: 5, 7: 4, 8: 3, 9: 2, 10: 1, 11: 0, 12: 0,
+};
+
+export function positionPoints(pos: number | null | undefined): number {
+  if (!pos) return 0;
+  return POSITION_POINTS[pos] ?? 0;
+}
+
+/** Points for a single match = placement points + total team kills that match */
+export function matchPoints(position: number | null | undefined, teamKills: number) {
+  return positionPoints(position) + teamKills;
+}
+

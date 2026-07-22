@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/admin/players")({
   component: PlayersAdmin,
 });
 
-const ROLES = ["IGL", "Assaulter", "Sniper", "Support", "Filler", "Fragger", "Scout"];
+const ROLES = ["Sniper", "Primary Rusher", "Secondary Rusher", "Bomber", "Support"];
 
 function PlayersAdmin() {
   const qc = useQueryClient();
