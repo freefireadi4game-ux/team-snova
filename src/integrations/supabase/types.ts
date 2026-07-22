@@ -61,18 +61,21 @@ export type Database = {
           created_at: string
           id: string
           match_number: number
+          position: number | null
           tournament_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           match_number: number
+          position?: number | null
           tournament_id: string
         }
         Update: {
           created_at?: string
           id?: string
           match_number?: number
+          position?: number | null
           tournament_id?: string
         }
         Relationships: [
