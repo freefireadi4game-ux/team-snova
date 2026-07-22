@@ -17,21 +17,22 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "glass rounded-2xl p-4 md:p-5 relative overflow-hidden group transition-transform hover:-translate-y-0.5",
+        "glass rounded-xl p-4 md:p-5 transition-colors hover:bg-white/[0.02]",
         accent && "neon-border",
         className,
       )}
     >
-      <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-neon-soft blur-2xl opacity-60 group-hover:opacity-100 transition-opacity" />
-      <div className="relative flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground truncate">
+          <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground truncate">
             {label}
           </div>
-          <div className="mt-1 text-2xl md:text-3xl font-black gradient-text truncate">{value}</div>
+          <div className="mt-2 text-3xl md:text-4xl font-display truncate text-foreground">
+            {value}
+          </div>
         </div>
         {icon && (
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-neon-soft text-neon">
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-neon-soft text-neon">
             {icon}
           </div>
         )}
