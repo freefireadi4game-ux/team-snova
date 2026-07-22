@@ -17,9 +17,11 @@ import {
   listAchievements,
   listPlayers,
   listStatsForTournament,
+  matchPoints,
+  positionPoints,
   sum,
 } from "@/lib/data";
-import { Crown, Flame, Swords, Zap, Medal } from "lucide-react";
+import { Crown, Flame, Swords, Zap, Medal, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/tournaments/$id")({
   component: TournamentDetail,
@@ -67,41 +69,82 @@ function TournamentDetail() {
     ? players.data?.find((p) => p.id === tour.mvp_player_id)
     : topFragger?.player;
 
+  const totalPoints = matches.reduce((acc, m) => {
+    const teamK = allStats.filter((s) => s.match_id === m.id).reduce((a, s) => a + s.kills, 0);
+    return acc + matchPoints(m.position, teamK);
+  }, 0);
+
   return (
     <Layout>
-      <section className="glass rounded-3xl p-6 md:p-8 relative overflow-hidden">
-        <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-neon-soft blur-3xl" />
-        <div className="relative">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`text-[10px] uppercase tracking-[0.25em] px-2 py-0.5 rounded-full ${
-                tour.status === "completed" ? "bg-neon-soft text-neon" : "bg-white/5 text-muted-foreground"
-              }`}
-            >
-              {tour.status}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {new Date(tour.date).toLocaleDateString()}
-            </span>
-          </div>
-          <h1 className="mt-3 text-3xl md:text-5xl font-black gradient-text">{tour.name}</h1>
-          <div className="text-xs text-muted-foreground mt-2">
-            Organizer: {tour.organizer ?? "—"} · {tour.num_matches} matches
-          </div>
+      <section className="glass rounded-2xl p-6 md:p-8">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`text-[10px] uppercase tracking-[0.25em] px-2 py-0.5 rounded-full ${
+              tour.status === "completed" ? "bg-neon-soft text-neon" : "bg-white/5 text-muted-foreground"
+            }`}
+          >
+            {tour.status}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {new Date(tour.date).toLocaleDateString()}
+          </span>
+        </div>
+        <h1 className="mt-3 text-4xl md:text-6xl font-display">{tour.name}</h1>
+        <div className="text-xs text-muted-foreground mt-2">
+          Organizer: {tour.organizer ?? "—"} · {tour.num_matches} matches
         </div>
       </section>
 
-      <section className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+      <section className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
+        <StatCard label="Total Points" value={totalPoints} icon={<Trophy className="h-4 w-4" />} accent />
         <StatCard label="Team Kills" value={teamKills} icon={<Flame className="h-4 w-4" />} />
         <StatCard label="Team Damage" value={teamDamage.toLocaleString()} icon={<Zap className="h-4 w-4" />} />
         <StatCard label="Matches" value={matches.length} icon={<Swords className="h-4 w-4" />} />
-        <StatCard
-          label="MVP"
-          value={mvp?.ign ?? "—"}
-          icon={<Crown className="h-4 w-4" />}
-          accent
-        />
+        <StatCard label="MVP" value={mvp?.ign ?? "—"} icon={<Crown className="h-4 w-4" />} />
       </section>
+
+      {/* Match-by-match points */}
+      {matches.length > 0 && (
+        <section className="mt-6 glass rounded-2xl p-4 md:p-6 overflow-x-auto">
+          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-neon" /> Points Breakdown
+          </h2>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-white/5 hover:bg-transparent">
+                <TableHead>Match</TableHead>
+                <TableHead className="text-right">Position</TableHead>
+                <TableHead className="text-right">Placement pts</TableHead>
+                <TableHead className="text-right">Team Kills</TableHead>
+                <TableHead className="text-right">Match Points</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {matches.map((m) => {
+                const teamK = allStats.filter((s) => s.match_id === m.id).reduce((a, s) => a + s.kills, 0);
+                const placement = positionPoints(m.position);
+                const pts = placement + teamK;
+                return (
+                  <TableRow key={m.id} className="border-white/5">
+                    <TableCell className="font-semibold">M{m.match_number}</TableCell>
+                    <TableCell className="text-right">{m.position ? `#${m.position}` : "—"}</TableCell>
+                    <TableCell className="text-right">{placement}</TableCell>
+                    <TableCell className="text-right">{teamK}</TableCell>
+                    <TableCell className="text-right font-bold text-neon">{pts}</TableCell>
+                  </TableRow>
+                );
+              })}
+              <TableRow className="border-white/5 bg-white/[0.02]">
+                <TableCell className="font-bold">Total</TableCell>
+                <TableCell />
+                <TableCell />
+                <TableCell />
+                <TableCell className="text-right font-display text-2xl text-neon">{totalPoints}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </section>
+      )}
 
       {tour.status === "completed" && (topFragger || damageLeader) && (
         <section className="mt-6 grid gap-3 md:grid-cols-3">
