@@ -17,12 +17,14 @@ import {
   listAchievements,
   listPlayers,
   listStatsForTournament,
+  matchPoints,
+  positionPoints,
   sum,
 } from "@/lib/data";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
-import { Save, Upload, CheckCircle2, ArrowLeft, Trash2 } from "lucide-react";
+import { Save, Upload, CheckCircle2, ArrowLeft, Trash2, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/tournaments/$id")({
   component: ManageTournament,
@@ -44,6 +46,7 @@ function ManageTournament() {
 
   const [currentMatchIdx, setCurrentMatchIdx] = useState(0);
   const [edits, setEdits] = useState<Record<string, { kills: string; damage: string }>>({});
+  const [position, setPosition] = useState<string>("");
   const [savingMatch, setSavingMatch] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -65,6 +68,7 @@ function ManageTournament() {
       };
     }
     setEdits(map);
+    setPosition(currentMatch.position ? String(currentMatch.position) : "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMatch?.id, players.data]);
 
@@ -82,6 +86,12 @@ function ManageTournament() {
         .from("match_stats")
         .upsert(rows, { onConflict: "match_id,player_id" });
       if (error) throw error;
+      const pos = position ? parseInt(position) : null;
+      const { error: pErr } = await supabase
+        .from("matches")
+        .update({ position: pos })
+        .eq("id", currentMatch.id);
+      if (pErr) throw pErr;
       qc.invalidateQueries({ queryKey: ["tournament-stats", id] });
       qc.invalidateQueries({ queryKey: ["all-stats"] });
       toast.success(`Match ${currentMatch.match_number} saved`);
