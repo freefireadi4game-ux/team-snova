@@ -155,6 +155,16 @@ function ManageTournament() {
   // Live tournament totals
   const totalKills = sum(stats.map((s) => s.kills));
   const totalDamage = sum(stats.map((s) => s.damage));
+  const totalPoints = matches.reduce((acc, m) => {
+    const teamK = stats.filter((s) => s.match_id === m.id).reduce((a, s) => a + s.kills, 0);
+    return acc + matchPoints(m.position, teamK);
+  }, 0);
+
+  const currentTeamKills = currentMatch
+    ? stats.filter((s) => s.match_id === currentMatch.id).reduce((a, s) => a + s.kills, 0)
+    : 0;
+  const currentPos = position ? parseInt(position) : null;
+  const currentMatchPoints = matchPoints(currentPos, currentTeamKills);
 
   return (
     <div className="space-y-6">
@@ -162,42 +172,83 @@ function ManageTournament() {
         <Link to="/admin/tournaments" className="text-xs text-muted-foreground hover:text-neon inline-flex items-center gap-1">
           <ArrowLeft className="h-3 w-3" /> Back to tournaments
         </Link>
-        <h2 className="text-2xl font-black gradient-text mt-2">{t.name}</h2>
-        <div className="text-xs text-muted-foreground">
-          {t.status} · {t.num_matches} matches · Team {totalKills} kills / {totalDamage.toLocaleString()} dmg
+        <h2 className="text-3xl md:text-4xl font-display mt-2">{t.name}</h2>
+        <div className="text-xs text-muted-foreground mt-1">
+          {t.status} · {t.num_matches} matches · {totalKills} kills · {totalDamage.toLocaleString()} dmg
+          · <span className="text-neon font-semibold">{totalPoints} pts</span>
         </div>
       </div>
 
       {/* Match selector */}
-      <div className="glass rounded-2xl p-4">
+      <div className="glass rounded-xl p-4">
         <Label>Match</Label>
         <div className="mt-2 flex flex-wrap gap-2">
-          {matches.map((m, i) => (
-            <button
-              key={m.id}
-              onClick={() => setCurrentMatchIdx(i)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                i === currentMatchIdx
-                  ? "bg-neon-soft text-neon neon-border"
-                  : "bg-white/5 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Match {m.match_number}
-            </button>
-          ))}
+          {matches.map((m, i) => {
+            const teamK = stats.filter((s) => s.match_id === m.id).reduce((a, s) => a + s.kills, 0);
+            const pts = matchPoints(m.position, teamK);
+            return (
+              <button
+                key={m.id}
+                onClick={() => setCurrentMatchIdx(i)}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                  i === currentMatchIdx
+                    ? "bg-neon-soft text-neon neon-border"
+                    : "bg-white/5 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Match {m.match_number}
+                {m.position ? <span className="ml-1 opacity-70">· #{m.position} · {pts}p</span> : null}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Match stat editor */}
       {currentMatch && (
-        <div className="glass rounded-2xl p-4">
+        <div className="glass rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold">Match {currentMatch.match_number} stats</h3>
-            <Button onClick={saveMatch} disabled={savingMatch} size="sm" className="glow">
+            <h3 className="font-display text-2xl">Match {currentMatch.match_number}</h3>
+            <Button onClick={saveMatch} disabled={savingMatch} size="sm">
               <Save className="h-3.5 w-3.5 mr-1" />
               {savingMatch ? "Saving…" : "Save match"}
             </Button>
           </div>
+
+          {/* Position + points */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4 items-end">
+            <div>
+              <Label className="text-xs">Team Position</Label>
+              <Select value={position} onValueChange={setPosition}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select finish" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <SelectItem key={i + 1} value={String(i + 1)}>
+                      #{i + 1} — {positionPoints(i + 1)} pts
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="glass rounded-md p-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Team Kills</div>
+              <div className="font-display text-2xl">{currentTeamKills}</div>
+            </div>
+            <div className="glass rounded-md p-3 neon-border">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-neon flex items-center gap-1">
+                <Trophy className="h-3 w-3" /> Match Points
+              </div>
+              <div className="font-display text-2xl">
+                {currentMatchPoints}
+                <span className="text-xs text-muted-foreground ml-2">
+                  {positionPoints(currentPos)} + {currentTeamKills}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-2">
             {activePlayers.map((p) => (
               <div key={p.id} className="flex items-center gap-2 rounded-xl bg-white/5 p-2">
