@@ -24,7 +24,9 @@ export const Route = createFileRoute("/_authenticated/admin/tournaments")({
 function TournamentsAdmin() {
   const qc = useQueryClient();
   const tournaments = useQuery({ queryKey: ["tournaments"], queryFn: listTournaments });
-  const players = useQuery({ queryKey: ["players"], queryFn: listPlayers });
+  const _players = useQuery({ queryKey: ["players"], queryFn: listPlayers });
+  void _players;
+
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
