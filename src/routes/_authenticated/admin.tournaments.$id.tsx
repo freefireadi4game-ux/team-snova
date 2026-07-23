@@ -55,13 +55,21 @@ function ManageTournament() {
   const matches = data.data?.matches ?? [];
   const stats = data.data?.stats ?? [];
   const currentMatch = matches[currentMatchIdx];
-  const activePlayers = players.data?.filter((p) => p.status === "active") ?? [];
+  if (!matches.length) {
+  return (
+    <div className="glass rounded-xl p-6">
+      Preparing tournament matches...
+    </div>
+  );
+  }
+  const activePlayers = players.data ?? [];
 
   // Auto-heal: if a tournament has no matches yet, create them from num_matches
   useEffect(() => {
     const run = async () => {
       if (!tour.data || repairing) return;
       if (data.isLoading || data.isFetching) return;
+      if (!data.data) return;
       if (matches.length >= tour.data.num_matches) return;
       setRepairing(true);
       try {
@@ -186,7 +194,17 @@ function ManageTournament() {
     qc.invalidateQueries({ queryKey: ["tournament-achievements", id] });
   };
 
-  if (!tour.data) return <div>Loading…</div>;
+  if (tour.isLoading || players.isLoading || data.isLoading || ach.isLoading) {
+  return <div>Loading...</div>;
+}
+
+if (tour.error) {
+  return <div>Failed to load tournament.</div>;
+}
+
+if (!tour.data) {
+  return <div>Tournament not found.</div>;
+}
   const t = tour.data;
 
   // Live tournament totals
