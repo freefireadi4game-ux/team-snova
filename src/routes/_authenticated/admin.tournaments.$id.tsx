@@ -32,17 +32,22 @@ export const Route = createFileRoute("/_authenticated/admin/tournaments/$id")({
 
 function ManageTournament() {
   const { id } = Route.useParams();
+  console.log("Tournament ID:", id);
   const qc = useQueryClient();
   const tour = useQuery({ queryKey: ["tournament", id], queryFn: () => getTournament(id) });
+  console.log("Tour Query:", tour);
   const players = useQuery({ queryKey: ["players"], queryFn: listPlayers });
+  console.log("Players Query:", players);
   const data = useQuery({
     queryKey: ["tournament-stats", id],
     queryFn: () => listStatsForTournament(id),
   });
+  console.log("Stats Query:", data);
   const ach = useQuery({
     queryKey: ["tournament-achievements", id],
     queryFn: () => listAchievements(id),
   });
+  console.log("Achievements Query:", ach);
 
   const [currentMatchIdx, setCurrentMatchIdx] = useState(0);
   const [edits, setEdits] = useState<Record<string, { kills: string; damage: string }>>({});
@@ -52,17 +57,10 @@ function ManageTournament() {
   const [completing, setCompleting] = useState(false);
   const [repairing, setRepairing] = useState(false);
 
-  const matches = data.data?.matches ?? [];
-  const stats = data.data?.stats ?? [];
-  const currentMatch = matches[currentMatchIdx];
-  if (!matches.length) {
-  return (
-    <div className="glass rounded-xl p-6">
-      Preparing tournament matches...
-    </div>
-  );
-  }
-  const activePlayers = players.data ?? [];
+   const matches = data.data?.matches ?? [];
+const stats = data.data?.stats ?? [];
+const currentMatch = matches[currentMatchIdx];
+const activePlayers = players.data ?? [];
 
   // Auto-heal: if a tournament has no matches yet, create them from num_matches
   useEffect(() => {
@@ -199,7 +197,23 @@ function ManageTournament() {
 }
 
 if (tour.error) {
+  console.error("Tournament Error:", tour.error);
   return <div>Failed to load tournament.</div>;
+}
+
+if (players.error) {
+  console.error("Players Error:", players.error);
+  return <div>Players failed to load.</div>;
+}
+
+if (data.error) {
+  console.error("Stats Error:", data.error);
+  return <div>Stats failed to load.</div>;
+}
+
+if (ach.error) {
+  console.error("Achievements Error:", ach.error);
+  return <div>Achievements failed to load.</div>;
 }
 
 if (!tour.data) {
