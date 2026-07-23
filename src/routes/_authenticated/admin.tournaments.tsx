@@ -148,13 +148,15 @@ function TournamentsAdmin() {
               </div>
             </div>
             <Button size="sm" variant="secondary" asChild>
-  <Link
-    to="/admin/tournaments/$id"
-    params={{ id: t.id }}
-  >
+<Link
+  to="/admin/tournaments/$id"
+  params={{ id: t.id }}
+  onClick={() => console.log("Manage clicked", t.id)}
+>
+  <Button size="sm" variant="secondary">
     Manage
-  </Link>
-</Button>
+  </Button>
+</Link>
             <Button
               variant="ghost"
               size="icon"
