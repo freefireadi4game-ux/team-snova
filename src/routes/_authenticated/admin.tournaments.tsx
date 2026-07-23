@@ -48,33 +48,19 @@ function TournamentsAdmin() {
           status: "ongoing",
         })
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
+      if (!t) throw new Error("Tournament created but not returned. Check admin permissions.");
 
       // Create matches
       const matchRows = Array.from({ length: form.num_matches }).map((_, i) => ({
         tournament_id: t.id,
         match_number: i + 1,
       }));
-      const { data: matches, error: mErr } = await supabase
-        .from("matches")
-        .insert(matchRows)
-        .select();
-      if (mErr) throw mErr;
-
-      // Auto-fill stats for all active players (kills=0, damage=0)
-      const activePlayers = (players.data ?? []).filter((p) => p.status === "active");
-      const statRows = matches!.flatMap((m) =>
-        activePlayers.map((p) => ({
-          match_id: m.id,
-          player_id: p.id,
-          kills: 0,
-          damage: 0,
-        })),
-      );
-      if (statRows.length) {
-        const { error: sErr } = await supabase.from("match_stats").insert(statRows);
-        if (sErr) throw sErr;
+      const { error: mErr } = await supabase.from("matches").insert(matchRows);
+      if (mErr) {
+        console.error("[create matches]", mErr);
+        toast.warning(`Tournament created but matches failed: ${mErr.message}. Open Manage to auto-repair.`);
       }
 
       qc.invalidateQueries({ queryKey: ["tournaments"] });
@@ -82,11 +68,13 @@ function TournamentsAdmin() {
       setOpen(false);
       setForm({ name: "", organizer: "", date: new Date().toISOString().slice(0, 10), num_matches: 3 });
     } catch (e: any) {
-      toast.error(e.message);
+      console.error("[create tournament]", e);
+      toast.error(e.message ?? "Failed to create tournament");
     } finally {
       setSaving(false);
     }
   };
+
 
   const del = useMutation({
     mutationFn: async (id: string) => {
