@@ -71,10 +71,11 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-white/5 backdrop-blur-xl bg-background/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="grid h-9 w-9 place-items-center rounded-lg glass glow">
-              <Trophy className="h-4 w-4 text-neon" />
+            <div className="h-10 w-10 rounded-lg overflow-hidden ring-1 ring-white/10 shadow-lg">
+              <img src={snovaLogo.url} alt="Team Snova Esp" className="h-full w-full object-cover" />
             </div>
             <div className="leading-tight">
+
               <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Team</div>
               <div className="text-sm font-black tracking-tight gradient-text">SNOVA ESP</div>
             </div>
