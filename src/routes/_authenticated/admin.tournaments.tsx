@@ -147,16 +147,9 @@ function TournamentsAdmin() {
                 {t.status} · {new Date(t.date).toLocaleDateString()} · {t.num_matches} matches
               </div>
             </div>
-            <Button size="sm" variant="secondary" asChild>
-<Link
-  to="/admin/tournaments/$id"
-  params={{ id: t.id }}
-  onClick={() => console.log("Manage clicked", t.id)}
->
-  <Button size="sm" variant="secondary">
-    Manage
-  </Button>
-</Link>
+            <Link to="/admin/tournaments/$id" params={{ id: t.id }}>
+              <Button size="sm" variant="secondary">Manage</Button>
+            </Link>
             <Button
               variant="ghost"
               size="icon"
