@@ -147,9 +147,14 @@ function TournamentsAdmin() {
                 {t.status} · {new Date(t.date).toLocaleDateString()} · {t.num_matches} matches
               </div>
             </div>
-            <Link to="/admin/tournaments/$id" params={{ id: t.id }}>
-              <Button size="sm" variant="secondary">Manage</Button>
-            </Link>
+            <Button size="sm" variant="secondary" asChild>
+  <Link
+    to="/admin/tournaments/$id"
+    params={{ id: t.id }}
+  >
+    Manage
+  </Link>
+</Button>
             <Button
               variant="ghost"
               size="icon"
