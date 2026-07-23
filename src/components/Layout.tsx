@@ -1,10 +1,11 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Menu, Trophy, Users, BarChart3, Home, Shield, LogOut, GitCompareArrows } from "lucide-react";
+import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import snovaLogo from "@/assets/snova-logo.jpg.asset.json";
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
@@ -12,6 +13,7 @@ const NAV = [
   { to: "/tournaments", label: "Tournaments", icon: Trophy },
   { to: "/compare", label: "Compare", icon: GitCompareArrows },
 ];
+
 
 function NavLinks({ onClick }: { onClick?: () => void }) {
   const { data: isAdmin } = useIsAdmin();
