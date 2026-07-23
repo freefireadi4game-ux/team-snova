@@ -1,10 +1,11 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Menu, Trophy, Users, BarChart3, Home, Shield, LogOut, GitCompareArrows } from "lucide-react";
+import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import snovaLogo from "@/assets/snova-logo.jpg.asset.json";
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
@@ -12,6 +13,7 @@ const NAV = [
   { to: "/tournaments", label: "Tournaments", icon: Trophy },
   { to: "/compare", label: "Compare", icon: GitCompareArrows },
 ];
+
 
 function NavLinks({ onClick }: { onClick?: () => void }) {
   const { data: isAdmin } = useIsAdmin();
@@ -69,10 +71,11 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-white/5 backdrop-blur-xl bg-background/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="grid h-9 w-9 place-items-center rounded-lg glass glow">
-              <Trophy className="h-4 w-4 text-neon" />
+            <div className="h-10 w-10 rounded-lg overflow-hidden ring-1 ring-white/10 shadow-lg">
+              <img src={snovaLogo.url} alt="Team Snova Esp" className="h-full w-full object-cover" />
             </div>
             <div className="leading-tight">
+
               <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Team</div>
               <div className="text-sm font-black tracking-tight gradient-text">SNOVA ESP</div>
             </div>
