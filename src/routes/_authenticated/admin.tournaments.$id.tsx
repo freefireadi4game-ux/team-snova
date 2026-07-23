@@ -50,11 +50,45 @@ function ManageTournament() {
   const [savingMatch, setSavingMatch] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [repairing, setRepairing] = useState(false);
 
   const matches = data.data?.matches ?? [];
   const stats = data.data?.stats ?? [];
   const currentMatch = matches[currentMatchIdx];
   const activePlayers = players.data?.filter((p) => p.status === "active") ?? [];
+
+  // Auto-heal: if a tournament has no matches yet, create them from num_matches
+  useEffect(() => {
+    const run = async () => {
+      if (!tour.data || repairing) return;
+      if (data.isLoading || data.isFetching) return;
+      if (matches.length >= tour.data.num_matches) return;
+      setRepairing(true);
+      try {
+        const existingNums = new Set(matches.map((m) => m.match_number));
+        const toCreate = [];
+        for (let i = 1; i <= tour.data.num_matches; i++) {
+          if (!existingNums.has(i)) {
+            toCreate.push({ tournament_id: id, match_number: i });
+          }
+        }
+        if (toCreate.length) {
+          const { error } = await supabase.from("matches").insert(toCreate);
+          if (error) throw error;
+          await qc.invalidateQueries({ queryKey: ["tournament-stats", id] });
+          toast.success(`Prepared ${toCreate.length} match slot(s)`);
+        }
+      } catch (e: any) {
+        console.error("[repair matches]", e);
+        toast.error(`Couldn't prepare matches: ${e.message}`);
+      } finally {
+        setRepairing(false);
+      }
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tour.data?.id, data.isFetching]);
+
 
   // Load edits when match changes
   useEffect(() => {
