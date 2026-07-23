@@ -84,6 +84,60 @@ export async function listAllStats() {
   return (data ?? []) as MatchStat[];
 }
 
+export type RecentMatch = {
+  match_id: string;
+  match_number: number;
+  position: number | null;
+  tournament_id: string;
+  tournament_name: string;
+  created_at: string;
+  team_kills: number;
+  team_damage: number;
+  points: number;
+};
+
+export async function listRecentMatches(limit = 4): Promise<RecentMatch[]> {
+  const { data: matches, error } = await supabase
+    .from("matches")
+    .select("id, match_number, position, tournament_id, created_at, tournaments(name)")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  if (!matches?.length) return [];
+  const ids = matches.map((m) => m.id);
+  const { data: stats, error: sErr } = await supabase
+    .from("match_stats")
+    .select("match_id, kills, damage")
+    .in("match_id", ids);
+  if (sErr) throw sErr;
+  const agg = new Map<string, { k: number; d: number }>();
+  for (const s of stats ?? []) {
+    const cur = agg.get(s.match_id) ?? { k: 0, d: 0 };
+    cur.k += s.kills;
+    cur.d += s.damage;
+    agg.set(s.match_id, cur);
+  }
+  const withStats = matches
+    .filter((m) => agg.has(m.id))
+    .slice(0, limit)
+    .map((m) => {
+      const a = agg.get(m.id)!;
+      return {
+        match_id: m.id,
+        match_number: m.match_number,
+        position: m.position,
+        tournament_id: m.tournament_id,
+        tournament_name: (m.tournaments as any)?.name ?? "—",
+        created_at: m.created_at,
+        team_kills: a.k,
+        team_damage: a.d,
+        points: positionPoints(m.position) + a.k,
+      };
+    });
+  return withStats;
+}
+
+
 export async function listStatsForTournament(tournamentId: string) {
   const matches = await listMatches(tournamentId);
   if (!matches.length) return { matches: [], stats: [] as MatchStat[] };
