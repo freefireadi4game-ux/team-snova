@@ -128,13 +128,16 @@ function ManageTournament() {
       if (pErr) throw pErr;
       qc.invalidateQueries({ queryKey: ["tournament-stats", id] });
       qc.invalidateQueries({ queryKey: ["all-stats"] });
+      qc.invalidateQueries({ queryKey: ["recent-matches", 4] });
       toast.success(`Match ${currentMatch.match_number} saved`);
     } catch (e: any) {
-      toast.error(e.message);
+      console.error("[saveMatch]", e);
+      toast.error(e.message ?? "Failed to save match");
     } finally {
       setSavingMatch(false);
     }
   };
+
 
   const completeTournament = async () => {
     // Calculate MVP: top total kills across matches
