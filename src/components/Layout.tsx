@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows } from "lucide-react";
+import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows, BarChart3 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,13 @@ const NAV = [
   { to: "/", label: "Home", icon: Home },
   { to: "/players", label: "Roster", icon: Users },
   { to: "/tournaments", label: "Tournaments", icon: Trophy },
+  { to: "/stats", label: "Stats", icon: BarChart3 },
+  { to: "/compare", label: "Compare", icon: GitCompareArrows },
+];
+
+const BOTTOM_NAV = [
+  { to: "/", label: "Home", icon: Home },
+  { to: "/stats", label: "Stats", icon: BarChart3 },
   { to: "/compare", label: "Compare", icon: GitCompareArrows },
 ];
 
@@ -110,12 +117,30 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 md:py-10">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-6 md:py-10 pb-24 md:pb-10">{children}</main>
 
-      <footer className="mt-16 border-t border-white/5 py-8 text-center text-xs text-muted-foreground">
+      <footer className="mt-16 border-t border-white/5 py-8 text-center text-xs text-muted-foreground pb-24 md:pb-8">
         <div className="gradient-text font-bold tracking-[0.3em]">TEAM SNOVA ESP</div>
         <div className="mt-1">Compete. Dominate. Repeat.</div>
       </footer>
+
+      {/* Bottom nav (mobile only) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 backdrop-blur-xl bg-background/85">
+        <div className="mx-auto grid grid-cols-3 max-w-md">
+          {BOTTOM_NAV.map((n) => (
+            <Link
+              key={n.to}
+              to={n.to}
+              className="flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+              activeProps={{ className: "!text-neon" }}
+              activeOptions={{ exact: n.to === "/" }}
+            >
+              <n.icon className="h-5 w-5" />
+              {n.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }

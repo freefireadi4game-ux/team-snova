@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { listTournaments } from "@/lib/data";
 import { Trophy } from "lucide-react";
 
-export const Route = createFileRoute("/tournaments")({
+export const Route = createFileRoute("/tournaments/")({
   head: () => ({
     meta: [
       { title: "Tournaments — Team SNOVA ESP" },

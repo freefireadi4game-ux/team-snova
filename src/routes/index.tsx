@@ -11,6 +11,7 @@ import {
   listTournaments,
   listAllStats,
   listRecentMatches,
+  listLatestMatchLeaderboard,
   sum,
 } from "@/lib/data";
 
@@ -23,6 +24,7 @@ function Home() {
   const tournaments = useQuery({ queryKey: ["tournaments"], queryFn: listTournaments });
   const stats = useQuery({ queryKey: ["all-stats"], queryFn: listAllStats });
   const recent = useQuery({ queryKey: ["recent-matches", 4], queryFn: () => listRecentMatches(4) });
+  const latestMatch = useQuery({ queryKey: ["latest-match-leaderboard"], queryFn: listLatestMatchLeaderboard });
 
   const loading = players.isLoading || tournaments.isLoading || stats.isLoading;
   const activePlayers = players.data?.filter((p) => p.status === "active") ?? [];
@@ -154,6 +156,52 @@ function Home() {
           </div>
         )}
       </section>
+
+      {/* Latest match player kill leaderboard */}
+      {latestMatch.data && latestMatch.data.rows.length > 0 && (
+        <section className="mt-10 glass rounded-2xl p-4 md:p-6">
+          <div className="flex items-end justify-between mb-4 gap-3 flex-wrap">
+            <div>
+              <h2 className="text-xl md:text-2xl font-bold">Latest Match — Kill Leaderboard</h2>
+              <div className="text-xs text-muted-foreground truncate">
+                {latestMatch.data.tournament_name} · Match {latestMatch.data.match_number}
+              </div>
+            </div>
+            <Link
+              to="/tournaments/$id"
+              params={{ id: latestMatch.data.tournament_id }}
+              className="text-xs text-neon hover:underline"
+            >
+              View tournament
+            </Link>
+          </div>
+          <div className="grid gap-2">
+            {latestMatch.data.rows.map((r, i) => (
+              <Link
+                key={r.player_id}
+                to="/players/$id"
+                params={{ id: r.player_id }}
+                className="flex items-center gap-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors p-2.5"
+              >
+                <div className="font-mono text-neon w-6 text-center text-sm">{i + 1}</div>
+                <PlayerAvatar photoPath={r.photo_url} name={r.ign} size={36} />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate text-sm">{r.ign}</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{r.role}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-display text-xl">{r.kills}</div>
+                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">kills</div>
+                </div>
+                <div className="text-right w-16">
+                  <div className="font-display text-sm">{r.damage.toLocaleString()}</div>
+                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">dmg</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Roster preview */}
       <section className="mt-10">
