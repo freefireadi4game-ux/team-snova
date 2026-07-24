@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StatsRouteImport } from './routes/stats'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -23,6 +24,11 @@ import { Route as AuthenticatedAdminTournamentsRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminPlayersRouteImport } from './routes/_authenticated/admin.players'
 import { Route as AuthenticatedAdminTournamentsIdRouteImport } from './routes/_authenticated/admin.tournaments.$id'
 
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
+  '/stats': typeof StatsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/tournaments/$id': typeof TournamentsIdRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
+  '/stats': typeof StatsRoute
   '/players/$id': typeof PlayersIdRoute
   '/tournaments/$id': typeof TournamentsIdRoute
   '/players': typeof PlayersIndexRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
+  '/stats': typeof StatsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/tournaments/$id': typeof TournamentsIdRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/compare'
+    | '/stats'
     | '/admin'
     | '/players/$id'
     | '/tournaments/$id'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/compare'
+    | '/stats'
     | '/players/$id'
     | '/tournaments/$id'
     | '/players'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/compare'
+    | '/stats'
     | '/_authenticated/admin'
     | '/players/$id'
     | '/tournaments/$id'
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
   CompareRoute: typeof CompareRoute
+  StatsRoute: typeof StatsRoute
   PlayersIdRoute: typeof PlayersIdRoute
   TournamentsIdRoute: typeof TournamentsIdRoute
   PlayersIndexRoute: typeof PlayersIndexRoute
@@ -192,6 +205,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/stats': {
+      id: '/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compare': {
       id: '/compare'
       path: '/compare'
@@ -333,6 +353,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
   CompareRoute: CompareRoute,
+  StatsRoute: StatsRoute,
   PlayersIdRoute: PlayersIdRoute,
   TournamentsIdRoute: TournamentsIdRoute,
   PlayersIndexRoute: PlayersIndexRoute,
