@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,16 @@ export const Route = createFileRoute("/_authenticated/admin/tournaments")({
 });
 
 function TournamentsAdmin() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (pathname.startsWith("/admin/tournaments/")) {
+    return <Outlet />;
+  }
+
+  return <TournamentsList />;
+}
+
+function TournamentsList() {
   const qc = useQueryClient();
   const tournaments = useQuery({ queryKey: ["tournaments"], queryFn: listTournaments });
   const _players = useQuery({ queryKey: ["players"], queryFn: listPlayers });
