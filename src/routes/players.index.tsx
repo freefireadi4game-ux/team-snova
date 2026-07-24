@@ -5,7 +5,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listPlayers } from "@/lib/data";
 
-export const Route = createFileRoute("/players")({
+export const Route = createFileRoute("/players/")({
   head: () => ({
     meta: [
       { title: "Roster — Team SNOVA ESP" },

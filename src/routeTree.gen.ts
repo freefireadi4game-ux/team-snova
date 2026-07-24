@@ -9,12 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TournamentsRouteImport } from './routes/tournaments'
-import { Route as PlayersRouteImport } from './routes/players'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TournamentsIndexRouteImport } from './routes/tournaments.index'
+import { Route as PlayersIndexRouteImport } from './routes/players.index'
 import { Route as TournamentsIdRouteImport } from './routes/tournaments.$id'
 import { Route as PlayersIdRouteImport } from './routes/players.$id'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -23,16 +23,6 @@ import { Route as AuthenticatedAdminTournamentsRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminPlayersRouteImport } from './routes/_authenticated/admin.players'
 import { Route as AuthenticatedAdminTournamentsIdRouteImport } from './routes/_authenticated/admin.tournaments.$id'
 
-const TournamentsRoute = TournamentsRouteImport.update({
-  id: '/tournaments',
-  path: '/tournaments',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlayersRoute = PlayersRouteImport.update({
-  id: '/players',
-  path: '/players',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
@@ -52,15 +42,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TournamentsIndexRoute = TournamentsIndexRouteImport.update({
+  id: '/tournaments/',
+  path: '/tournaments/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayersIndexRoute = PlayersIndexRouteImport.update({
+  id: '/players/',
+  path: '/players/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TournamentsIdRoute = TournamentsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => TournamentsRoute,
+  id: '/tournaments/$id',
+  path: '/tournaments/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PlayersIdRoute = PlayersIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => PlayersRoute,
+  id: '/players/$id',
+  path: '/players/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
@@ -95,11 +95,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
-  '/players': typeof PlayersRouteWithChildren
-  '/tournaments': typeof TournamentsRouteWithChildren
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/tournaments/$id': typeof TournamentsIdRoute
+  '/players/': typeof PlayersIndexRoute
+  '/tournaments/': typeof TournamentsIndexRoute
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -109,10 +109,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
-  '/players': typeof PlayersRouteWithChildren
-  '/tournaments': typeof TournamentsRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/tournaments/$id': typeof TournamentsIdRoute
+  '/players': typeof PlayersIndexRoute
+  '/tournaments': typeof TournamentsIndexRoute
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -124,11 +124,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
-  '/players': typeof PlayersRouteWithChildren
-  '/tournaments': typeof TournamentsRouteWithChildren
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/tournaments/$id': typeof TournamentsIdRoute
+  '/players/': typeof PlayersIndexRoute
+  '/tournaments/': typeof TournamentsIndexRoute
   '/_authenticated/admin/players': typeof AuthenticatedAdminPlayersRoute
   '/_authenticated/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -140,11 +140,11 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/compare'
-    | '/players'
-    | '/tournaments'
     | '/admin'
     | '/players/$id'
     | '/tournaments/$id'
+    | '/players/'
+    | '/tournaments/'
     | '/admin/players'
     | '/admin/tournaments'
     | '/admin/'
@@ -154,10 +154,10 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/compare'
-    | '/players'
-    | '/tournaments'
     | '/players/$id'
     | '/tournaments/$id'
+    | '/players'
+    | '/tournaments'
     | '/admin/players'
     | '/admin/tournaments'
     | '/admin'
@@ -168,11 +168,11 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/compare'
-    | '/players'
-    | '/tournaments'
     | '/_authenticated/admin'
     | '/players/$id'
     | '/tournaments/$id'
+    | '/players/'
+    | '/tournaments/'
     | '/_authenticated/admin/players'
     | '/_authenticated/admin/tournaments'
     | '/_authenticated/admin/'
@@ -184,26 +184,14 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
   CompareRoute: typeof CompareRoute
-  PlayersRoute: typeof PlayersRouteWithChildren
-  TournamentsRoute: typeof TournamentsRouteWithChildren
+  PlayersIdRoute: typeof PlayersIdRoute
+  TournamentsIdRoute: typeof TournamentsIdRoute
+  PlayersIndexRoute: typeof PlayersIndexRoute
+  TournamentsIndexRoute: typeof TournamentsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tournaments': {
-      id: '/tournaments'
-      path: '/tournaments'
-      fullPath: '/tournaments'
-      preLoaderRoute: typeof TournamentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/players': {
-      id: '/players'
-      path: '/players'
-      fullPath: '/players'
-      preLoaderRoute: typeof PlayersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/compare': {
       id: '/compare'
       path: '/compare'
@@ -232,19 +220,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tournaments/': {
+      id: '/tournaments/'
+      path: '/tournaments'
+      fullPath: '/tournaments/'
+      preLoaderRoute: typeof TournamentsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/players/': {
+      id: '/players/'
+      path: '/players'
+      fullPath: '/players/'
+      preLoaderRoute: typeof PlayersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tournaments/$id': {
       id: '/tournaments/$id'
-      path: '/$id'
+      path: '/tournaments/$id'
       fullPath: '/tournaments/$id'
       preLoaderRoute: typeof TournamentsIdRouteImport
-      parentRoute: typeof TournamentsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/players/$id': {
       id: '/players/$id'
-      path: '/$id'
+      path: '/players/$id'
       fullPath: '/players/$id'
       preLoaderRoute: typeof PlayersIdRouteImport
-      parentRoute: typeof PlayersRoute
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
@@ -326,47 +328,16 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
-interface PlayersRouteChildren {
-  PlayersIdRoute: typeof PlayersIdRoute
-}
-
-const PlayersRouteChildren: PlayersRouteChildren = {
-  PlayersIdRoute: PlayersIdRoute,
-}
-
-const PlayersRouteWithChildren =
-  PlayersRoute._addFileChildren(PlayersRouteChildren)
-
-interface TournamentsRouteChildren {
-  TournamentsIdRoute: typeof TournamentsIdRoute
-}
-
-const TournamentsRouteChildren: TournamentsRouteChildren = {
-  TournamentsIdRoute: TournamentsIdRoute,
-}
-
-const TournamentsRouteWithChildren = TournamentsRoute._addFileChildren(
-  TournamentsRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
   CompareRoute: CompareRoute,
-  PlayersRoute: PlayersRouteWithChildren,
-  TournamentsRoute: TournamentsRouteWithChildren,
+  PlayersIdRoute: PlayersIdRoute,
+  TournamentsIdRoute: TournamentsIdRoute,
+  PlayersIndexRoute: PlayersIndexRoute,
+  TournamentsIndexRoute: TournamentsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
