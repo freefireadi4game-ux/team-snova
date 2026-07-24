@@ -137,6 +137,61 @@ export async function listRecentMatches(limit = 4): Promise<RecentMatch[]> {
   return withStats;
 }
 
+export type LatestMatchPlayerKill = {
+  player_id: string;
+  ign: string;
+  photo_url: string | null;
+  role: string;
+  kills: number;
+  damage: number;
+};
+
+/** Player kill leaderboard for the most recent match that has stats logged. */
+export async function listLatestMatchLeaderboard(): Promise<{
+  match_number: number;
+  tournament_name: string;
+  tournament_id: string;
+  rows: LatestMatchPlayerKill[];
+} | null> {
+  const { data: matches, error } = await supabase
+    .from("matches")
+    .select("id, match_number, tournament_id, created_at, tournaments(name)")
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (error) throw error;
+  if (!matches?.length) return null;
+  const ids = matches.map((m) => m.id);
+  const { data: stats, error: sErr } = await supabase
+    .from("match_stats")
+    .select("match_id, player_id, kills, damage, players(ign, photo_url, role)")
+    .in("match_id", ids);
+  if (sErr) throw sErr;
+  const byMatch = new Map<string, typeof stats>();
+  for (const s of stats ?? []) {
+    const arr = byMatch.get(s.match_id) ?? [];
+    arr.push(s);
+    byMatch.set(s.match_id, arr);
+  }
+  const latest = matches.find((m) => (byMatch.get(m.id)?.length ?? 0) > 0);
+  if (!latest) return null;
+  const rows = (byMatch.get(latest.id) ?? [])
+    .map((s: any) => ({
+      player_id: s.player_id,
+      ign: s.players?.ign ?? "—",
+      photo_url: s.players?.photo_url ?? null,
+      role: s.players?.role ?? "",
+      kills: s.kills,
+      damage: s.damage,
+    }))
+    .sort((a, b) => b.kills - a.kills);
+  return {
+    match_number: latest.match_number,
+    tournament_name: (latest.tournaments as any)?.name ?? "—",
+    tournament_id: latest.tournament_id,
+    rows,
+  };
+}
+
 
 export async function listStatsForTournament(tournamentId: string) {
   const matches = await listMatches(tournamentId);
