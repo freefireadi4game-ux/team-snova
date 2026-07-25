@@ -11,7 +11,7 @@ import {
   listTournaments,
   listAllStats,
   listRecentMatches,
-  listLatestMatchLeaderboard,
+  listLatestTournamentLeaderboard,
   sum,
 } from "@/lib/data";
 
@@ -24,7 +24,7 @@ function Home() {
   const tournaments = useQuery({ queryKey: ["tournaments"], queryFn: listTournaments });
   const stats = useQuery({ queryKey: ["all-stats"], queryFn: listAllStats });
   const recent = useQuery({ queryKey: ["recent-matches", 4], queryFn: () => listRecentMatches(4) });
-  const latestMatch = useQuery({ queryKey: ["latest-match-leaderboard"], queryFn: listLatestMatchLeaderboard });
+  const latestTourBoard = useQuery({ queryKey: ["latest-tour-board"], queryFn: listLatestTournamentLeaderboard });
 
   const loading = players.isLoading || tournaments.isLoading || stats.isLoading;
   const activePlayers = players.data?.filter((p) => p.status === "active") ?? [];
