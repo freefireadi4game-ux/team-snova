@@ -14,8 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      map_paths: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          map_id: string
+          points: Json
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          map_id: string
+          points: Json
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          map_id?: string
+          points?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_paths_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maps: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string
+          name?: string
+        }
+        Relationships: []
+      }
       match_stats: {
         Row: {
+          assists: number
           created_at: string
           damage: number
           id: string
@@ -24,6 +84,7 @@ export type Database = {
           player_id: string
         }
         Insert: {
+          assists?: number
           created_at?: string
           damage?: number
           id?: string
@@ -32,6 +93,7 @@ export type Database = {
           player_id: string
         }
         Update: {
+          assists?: number
           created_at?: string
           damage?: number
           id?: string
@@ -87,6 +149,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      player_invites: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          token?: string
+        }
+        Relationships: []
       }
       players: {
         Row: {
@@ -220,6 +306,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_player_role: { Args: { _token: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
