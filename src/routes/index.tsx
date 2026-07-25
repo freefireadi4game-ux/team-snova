@@ -157,26 +157,26 @@ function Home() {
         )}
       </section>
 
-      {/* Latest match player kill leaderboard */}
-      {latestMatch.data && latestMatch.data.rows.length > 0 && (
+      {/* Latest tournament overall leaderboard */}
+      {latestTourBoard.data && latestTourBoard.data.rows.length > 0 && (
         <section className="mt-10 glass rounded-2xl p-4 md:p-6">
           <div className="flex items-end justify-between mb-4 gap-3 flex-wrap">
             <div>
-              <h2 className="text-xl md:text-2xl font-bold">Latest Match — Kill Leaderboard</h2>
+              <h2 className="text-xl md:text-2xl font-bold">Latest Tournament — Overall Leaderboard</h2>
               <div className="text-xs text-muted-foreground truncate">
-                {latestMatch.data.tournament_name} · Match {latestMatch.data.match_number}
+                {latestTourBoard.data.tournament_name}
               </div>
             </div>
             <Link
               to="/tournaments/$id"
-              params={{ id: latestMatch.data.tournament_id }}
+              params={{ id: latestTourBoard.data.tournament_id }}
               className="text-xs text-neon hover:underline"
             >
               View tournament
             </Link>
           </div>
           <div className="grid gap-2">
-            {latestMatch.data.rows.map((r, i) => (
+            {latestTourBoard.data.rows.map((r, i) => (
               <Link
                 key={r.player_id}
                 to="/players/$id"
@@ -187,13 +187,19 @@ function Home() {
                 <PlayerAvatar photoPath={r.photo_url} name={r.ign} size={36} />
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold truncate text-sm">{r.ign}</div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{r.role}</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    {r.role} · {r.matches_played}m
+                  </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right w-12">
                   <div className="font-display text-xl">{r.kills}</div>
-                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">kills</div>
+                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">K</div>
                 </div>
-                <div className="text-right w-16">
+                <div className="text-right w-12">
+                  <div className="font-display text-base">{r.assists}</div>
+                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">A</div>
+                </div>
+                <div className="text-right w-16 hidden sm:block">
                   <div className="font-display text-sm">{r.damage.toLocaleString()}</div>
                   <div className="text-[9px] uppercase tracking-wider text-muted-foreground">dmg</div>
                 </div>
@@ -202,6 +208,7 @@ function Home() {
           </div>
         </section>
       )}
+
 
       {/* Roster preview */}
       <section className="mt-10">
