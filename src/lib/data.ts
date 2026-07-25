@@ -143,60 +143,67 @@ export async function listRecentMatches(limit = 4): Promise<RecentMatch[]> {
   return withStats;
 }
 
-export type LatestMatchPlayerKill = {
+export type TournamentBoardRow = {
   player_id: string;
   ign: string;
   photo_url: string | null;
   role: string;
   kills: number;
   damage: number;
+  assists: number;
+  matches_played: number;
 };
 
-/** Player kill leaderboard for the most recent match that has stats logged. */
-export async function listLatestMatchLeaderboard(): Promise<{
-  match_number: number;
-  tournament_name: string;
+/** Overall player leaderboard for the most recent tournament that has any logged stats. */
+export async function listLatestTournamentLeaderboard(): Promise<{
   tournament_id: string;
-  rows: LatestMatchPlayerKill[];
+  tournament_name: string;
+  rows: TournamentBoardRow[];
 } | null> {
-  const { data: matches, error } = await supabase
-    .from("matches")
-    .select("id, match_number, tournament_id, created_at, tournaments(name)")
-    .order("created_at", { ascending: false })
-    .limit(30);
+  const { data: tourneys, error } = await supabase
+    .from("tournaments")
+    .select("id, name, date, created_at")
+    .order("date", { ascending: false })
+    .limit(20);
   if (error) throw error;
-  if (!matches?.length) return null;
-  const ids = matches.map((m) => m.id);
-  const { data: stats, error: sErr } = await supabase
-    .from("match_stats")
-    .select("match_id, player_id, kills, damage, players(ign, photo_url, role)")
-    .in("match_id", ids);
-  if (sErr) throw sErr;
-  const byMatch = new Map<string, typeof stats>();
-  for (const s of stats ?? []) {
-    const arr = byMatch.get(s.match_id) ?? [];
-    arr.push(s);
-    byMatch.set(s.match_id, arr);
+  if (!tourneys?.length) return null;
+
+  for (const t of tourneys) {
+    const { data: matches } = await supabase.from("matches").select("id").eq("tournament_id", t.id);
+    if (!matches?.length) continue;
+    const ids = matches.map((m) => m.id);
+    const { data: stats } = await supabase
+      .from("match_stats")
+      .select("player_id, kills, damage, assists, players(ign, photo_url, role)")
+      .in("match_id", ids);
+    if (!stats?.length) continue;
+
+    const agg = new Map<string, TournamentBoardRow>();
+    for (const s of stats as any[]) {
+      if (!didPlay(s)) continue;
+      const cur = agg.get(s.player_id) ?? {
+        player_id: s.player_id,
+        ign: s.players?.ign ?? "—",
+        photo_url: s.players?.photo_url ?? null,
+        role: s.players?.role ?? "",
+        kills: 0,
+        damage: 0,
+        assists: 0,
+        matches_played: 0,
+      };
+      cur.kills += s.kills;
+      cur.damage += s.damage;
+      cur.assists += s.assists ?? 0;
+      cur.matches_played += 1;
+      agg.set(s.player_id, cur);
+    }
+    if (!agg.size) continue;
+    const rows = [...agg.values()].sort((a, b) => b.kills - a.kills || b.damage - a.damage);
+    return { tournament_id: t.id, tournament_name: t.name, rows };
   }
-  const latest = matches.find((m) => (byMatch.get(m.id)?.length ?? 0) > 0);
-  if (!latest) return null;
-  const rows = (byMatch.get(latest.id) ?? [])
-    .map((s: any) => ({
-      player_id: s.player_id,
-      ign: s.players?.ign ?? "—",
-      photo_url: s.players?.photo_url ?? null,
-      role: s.players?.role ?? "",
-      kills: s.kills,
-      damage: s.damage,
-    }))
-    .sort((a, b) => b.kills - a.kills);
-  return {
-    match_number: latest.match_number,
-    tournament_name: (latest.tournaments as any)?.name ?? "—",
-    tournament_id: latest.tournament_id,
-    rows,
-  };
+  return null;
 }
+
 
 
 export async function listStatsForTournament(tournamentId: string) {
