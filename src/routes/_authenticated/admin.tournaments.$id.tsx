@@ -45,7 +45,7 @@ function ManageTournament() {
   });
 
   const [currentMatchIdx, setCurrentMatchIdx] = useState(0);
-  const [edits, setEdits] = useState<Record<string, { kills: string; damage: string }>>({});
+  const [edits, setEdits] = useState<Record<string, { kills: string; damage: string; assists: string }>>({});
   const [position, setPosition] = useState<string>("");
   const [savingMatch, setSavingMatch] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -93,12 +93,13 @@ function ManageTournament() {
   // Load edits when match changes
   useEffect(() => {
     if (!currentMatch) return;
-    const map: Record<string, { kills: string; damage: string }> = {};
+    const map: Record<string, { kills: string; damage: string; assists: string }> = {};
     for (const p of activePlayers) {
       const s = stats.find((x) => x.match_id === currentMatch.id && x.player_id === p.id);
       map[p.id] = {
         kills: String(s?.kills ?? 0),
         damage: String(s?.damage ?? 0),
+        assists: String((s as any)?.assists ?? 0),
       };
     }
     setEdits(map);
@@ -115,6 +116,7 @@ function ManageTournament() {
         player_id: p.id,
         kills: parseInt(edits[p.id]?.kills) || 0,
         damage: parseInt(edits[p.id]?.damage) || 0,
+        assists: parseInt(edits[p.id]?.assists) || 0,
       }));
       const { error } = await supabase
         .from("match_stats")
@@ -287,41 +289,54 @@ function ManageTournament() {
           </div>
 
           <div className="grid gap-2">
-            {activePlayers.map((p) => (
-              <div key={p.id} className="flex items-center gap-2 rounded-xl bg-white/5 p-2">
-                <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={36} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate text-sm">{p.ign}</div>
-                  <div className="text-[10px] text-muted-foreground">{p.role}</div>
+            {activePlayers.map((p) => {
+              const e = edits[p.id] ?? { kills: "0", damage: "0", assists: "0" };
+              const played =
+                (parseInt(e.kills) || 0) > 0 ||
+                (parseInt(e.damage) || 0) > 0 ||
+                (parseInt(e.assists) || 0) > 0;
+              return (
+                <div key={p.id} className={`flex items-center gap-2 rounded-xl p-2 ${played ? "bg-white/5" : "bg-white/[0.02] opacity-60"}`}>
+                  <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={36} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold truncate text-sm">{p.ign}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {p.role} {!played && <span className="ml-1 text-neon/60">· didn't play</span>}
+                    </div>
+                  </div>
+                  <Input
+                    type="number"
+                    min={0}
+                    className="w-16 text-center"
+                    placeholder="K"
+                    value={e.kills}
+                    onChange={(ev) =>
+                      setEdits({ ...edits, [p.id]: { ...e, kills: ev.target.value } })
+                    }
+                  />
+                  <Input
+                    type="number"
+                    min={0}
+                    className="w-16 text-center"
+                    placeholder="A"
+                    value={e.assists}
+                    onChange={(ev) =>
+                      setEdits({ ...edits, [p.id]: { ...e, assists: ev.target.value } })
+                    }
+                  />
+                  <Input
+                    type="number"
+                    min={0}
+                    className="w-24 text-center"
+                    placeholder="Damage"
+                    value={e.damage}
+                    onChange={(ev) =>
+                      setEdits({ ...edits, [p.id]: { ...e, damage: ev.target.value } })
+                    }
+                  />
                 </div>
-                <Input
-                  type="number"
-                  min={0}
-                  className="w-20 text-center"
-                  placeholder="Kills"
-                  value={edits[p.id]?.kills ?? ""}
-                  onChange={(e) =>
-                    setEdits({
-                      ...edits,
-                      [p.id]: { ...edits[p.id], kills: e.target.value },
-                    })
-                  }
-                />
-                <Input
-                  type="number"
-                  min={0}
-                  className="w-24 text-center"
-                  placeholder="Damage"
-                  value={edits[p.id]?.damage ?? ""}
-                  onChange={(e) =>
-                    setEdits({
-                      ...edits,
-                      [p.id]: { ...edits[p.id], damage: e.target.value },
-                    })
-                  }
-                />
-              </div>
-            ))}
+              );
+            })}
             {!activePlayers.length && (
               <div className="text-sm text-muted-foreground text-center py-6">
                 No active players. Add players first.
