@@ -17,20 +17,29 @@ export function useSession() {
   return { session, loading };
 }
 
-export function useIsAdmin() {
+export function useMyRoles() {
   const { session } = useSession();
   return useQuery({
-    queryKey: ["is-admin", session?.user.id],
+    queryKey: ["my-roles", session?.user.id],
     queryFn: async () => {
-      if (!session) return false;
+      if (!session) return [] as string[];
       const { data } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      return !!data;
+        .eq("user_id", session.user.id);
+      return (data ?? []).map((r: any) => r.role as string);
     },
     enabled: !!session,
   });
+}
+
+export function useIsAdmin() {
+  const q = useMyRoles();
+  return { ...q, data: q.data?.includes("admin") ?? false };
+}
+
+export function useCanVoice() {
+  const q = useMyRoles();
+  const roles = q.data ?? [];
+  return { ...q, data: roles.includes("admin") || roles.includes("player") };
 }

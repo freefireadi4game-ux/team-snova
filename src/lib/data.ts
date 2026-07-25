@@ -29,7 +29,13 @@ export type MatchStat = {
   player_id: string;
   kills: number;
   damage: number;
+  assists: number;
 };
+
+/** A player is considered to have played a match only if they logged any stat > 0. */
+export function didPlay(s: { kills: number; damage: number; assists: number }) {
+  return s.kills > 0 || s.damage > 0 || s.assists > 0;
+}
 export type Achievement = {
   id: string;
   tournament_id: string;
