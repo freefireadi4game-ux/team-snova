@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -16,14 +17,24 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TournamentsIndexRouteImport } from './routes/tournaments.index'
 import { Route as PlayersIndexRouteImport } from './routes/players.index'
+import { Route as MapsIndexRouteImport } from './routes/maps.index'
 import { Route as TournamentsIdRouteImport } from './routes/tournaments.$id'
 import { Route as PlayersIdRouteImport } from './routes/players.$id'
+import { Route as MapsIdRouteImport } from './routes/maps.$id'
+import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminTournamentsRouteImport } from './routes/_authenticated/admin.tournaments'
 import { Route as AuthenticatedAdminPlayersRouteImport } from './routes/_authenticated/admin.players'
+import { Route as AuthenticatedAdminMapsRouteImport } from './routes/_authenticated/admin.maps'
+import { Route as AuthenticatedAdminInvitesRouteImport } from './routes/_authenticated/admin.invites'
 import { Route as AuthenticatedAdminTournamentsIdRouteImport } from './routes/_authenticated/admin.tournaments.$id'
 
+const VoiceRoute = VoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
   path: '/stats',
@@ -58,6 +69,11 @@ const PlayersIndexRoute = PlayersIndexRouteImport.update({
   path: '/players/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MapsIndexRoute = MapsIndexRouteImport.update({
+  id: '/maps/',
+  path: '/maps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TournamentsIdRoute = TournamentsIdRouteImport.update({
   id: '/tournaments/$id',
   path: '/tournaments/$id',
@@ -66,6 +82,16 @@ const TournamentsIdRoute = TournamentsIdRouteImport.update({
 const PlayersIdRoute = PlayersIdRouteImport.update({
   id: '/players/$id',
   path: '/players/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapsIdRoute = MapsIdRouteImport.update({
+  id: '/maps/$id',
+  path: '/maps/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinTokenRoute = JoinTokenRouteImport.update({
+  id: '/join/$token',
+  path: '/join/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -90,6 +116,17 @@ const AuthenticatedAdminPlayersRoute =
     path: '/players',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminMapsRoute = AuthenticatedAdminMapsRouteImport.update({
+  id: '/maps',
+  path: '/maps',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminInvitesRoute =
+  AuthenticatedAdminInvitesRouteImport.update({
+    id: '/invites',
+    path: '/invites',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminTournamentsIdRoute =
   AuthenticatedAdminTournamentsIdRouteImport.update({
     id: '/$id',
@@ -102,11 +139,17 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
   '/stats': typeof StatsRoute
+  '/voice': typeof VoiceRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/join/$token': typeof JoinTokenRoute
+  '/maps/$id': typeof MapsIdRoute
   '/players/$id': typeof PlayersIdRoute
   '/tournaments/$id': typeof TournamentsIdRoute
+  '/maps/': typeof MapsIndexRoute
   '/players/': typeof PlayersIndexRoute
   '/tournaments/': typeof TournamentsIndexRoute
+  '/admin/invites': typeof AuthenticatedAdminInvitesRoute
+  '/admin/maps': typeof AuthenticatedAdminMapsRoute
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -117,10 +160,16 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
   '/stats': typeof StatsRoute
+  '/voice': typeof VoiceRoute
+  '/join/$token': typeof JoinTokenRoute
+  '/maps/$id': typeof MapsIdRoute
   '/players/$id': typeof PlayersIdRoute
   '/tournaments/$id': typeof TournamentsIdRoute
+  '/maps': typeof MapsIndexRoute
   '/players': typeof PlayersIndexRoute
   '/tournaments': typeof TournamentsIndexRoute
+  '/admin/invites': typeof AuthenticatedAdminInvitesRoute
+  '/admin/maps': typeof AuthenticatedAdminMapsRoute
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -133,11 +182,17 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
   '/stats': typeof StatsRoute
+  '/voice': typeof VoiceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/join/$token': typeof JoinTokenRoute
+  '/maps/$id': typeof MapsIdRoute
   '/players/$id': typeof PlayersIdRoute
   '/tournaments/$id': typeof TournamentsIdRoute
+  '/maps/': typeof MapsIndexRoute
   '/players/': typeof PlayersIndexRoute
   '/tournaments/': typeof TournamentsIndexRoute
+  '/_authenticated/admin/invites': typeof AuthenticatedAdminInvitesRoute
+  '/_authenticated/admin/maps': typeof AuthenticatedAdminMapsRoute
   '/_authenticated/admin/players': typeof AuthenticatedAdminPlayersRoute
   '/_authenticated/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -150,11 +205,17 @@ export interface FileRouteTypes {
     | '/auth'
     | '/compare'
     | '/stats'
+    | '/voice'
     | '/admin'
+    | '/join/$token'
+    | '/maps/$id'
     | '/players/$id'
     | '/tournaments/$id'
+    | '/maps/'
     | '/players/'
     | '/tournaments/'
+    | '/admin/invites'
+    | '/admin/maps'
     | '/admin/players'
     | '/admin/tournaments'
     | '/admin/'
@@ -165,10 +226,16 @@ export interface FileRouteTypes {
     | '/auth'
     | '/compare'
     | '/stats'
+    | '/voice'
+    | '/join/$token'
+    | '/maps/$id'
     | '/players/$id'
     | '/tournaments/$id'
+    | '/maps'
     | '/players'
     | '/tournaments'
+    | '/admin/invites'
+    | '/admin/maps'
     | '/admin/players'
     | '/admin/tournaments'
     | '/admin'
@@ -180,11 +247,17 @@ export interface FileRouteTypes {
     | '/auth'
     | '/compare'
     | '/stats'
+    | '/voice'
     | '/_authenticated/admin'
+    | '/join/$token'
+    | '/maps/$id'
     | '/players/$id'
     | '/tournaments/$id'
+    | '/maps/'
     | '/players/'
     | '/tournaments/'
+    | '/_authenticated/admin/invites'
+    | '/_authenticated/admin/maps'
     | '/_authenticated/admin/players'
     | '/_authenticated/admin/tournaments'
     | '/_authenticated/admin/'
@@ -197,14 +270,25 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CompareRoute: typeof CompareRoute
   StatsRoute: typeof StatsRoute
+  VoiceRoute: typeof VoiceRoute
+  JoinTokenRoute: typeof JoinTokenRoute
+  MapsIdRoute: typeof MapsIdRoute
   PlayersIdRoute: typeof PlayersIdRoute
   TournamentsIdRoute: typeof TournamentsIdRoute
+  MapsIndexRoute: typeof MapsIndexRoute
   PlayersIndexRoute: typeof PlayersIndexRoute
   TournamentsIndexRoute: typeof TournamentsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/voice': {
+      id: '/voice'
+      path: '/voice'
+      fullPath: '/voice'
+      preLoaderRoute: typeof VoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/stats': {
       id: '/stats'
       path: '/stats'
@@ -254,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/maps/': {
+      id: '/maps/'
+      path: '/maps'
+      fullPath: '/maps/'
+      preLoaderRoute: typeof MapsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tournaments/$id': {
       id: '/tournaments/$id'
       path: '/tournaments/$id'
@@ -266,6 +357,20 @@ declare module '@tanstack/react-router' {
       path: '/players/$id'
       fullPath: '/players/$id'
       preLoaderRoute: typeof PlayersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/maps/$id': {
+      id: '/maps/$id'
+      path: '/maps/$id'
+      fullPath: '/maps/$id'
+      preLoaderRoute: typeof MapsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join/$token': {
+      id: '/join/$token'
+      path: '/join/$token'
+      fullPath: '/join/$token'
+      preLoaderRoute: typeof JoinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -296,6 +401,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPlayersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/maps': {
+      id: '/_authenticated/admin/maps'
+      path: '/maps'
+      fullPath: '/admin/maps'
+      preLoaderRoute: typeof AuthenticatedAdminMapsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/invites': {
+      id: '/_authenticated/admin/invites'
+      path: '/invites'
+      fullPath: '/admin/invites'
+      preLoaderRoute: typeof AuthenticatedAdminInvitesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/tournaments/$id': {
       id: '/_authenticated/admin/tournaments/$id'
       path: '/$id'
@@ -321,12 +440,16 @@ const AuthenticatedAdminTournamentsRouteWithChildren =
   )
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminInvitesRoute: typeof AuthenticatedAdminInvitesRoute
+  AuthenticatedAdminMapsRoute: typeof AuthenticatedAdminMapsRoute
   AuthenticatedAdminPlayersRoute: typeof AuthenticatedAdminPlayersRoute
   AuthenticatedAdminTournamentsRoute: typeof AuthenticatedAdminTournamentsRouteWithChildren
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminInvitesRoute: AuthenticatedAdminInvitesRoute,
+  AuthenticatedAdminMapsRoute: AuthenticatedAdminMapsRoute,
   AuthenticatedAdminPlayersRoute: AuthenticatedAdminPlayersRoute,
   AuthenticatedAdminTournamentsRoute:
     AuthenticatedAdminTournamentsRouteWithChildren,
@@ -354,8 +477,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CompareRoute: CompareRoute,
   StatsRoute: StatsRoute,
+  VoiceRoute: VoiceRoute,
+  JoinTokenRoute: JoinTokenRoute,
+  MapsIdRoute: MapsIdRoute,
   PlayersIdRoute: PlayersIdRoute,
   TournamentsIdRoute: TournamentsIdRoute,
+  MapsIndexRoute: MapsIndexRoute,
   PlayersIndexRoute: PlayersIndexRoute,
   TournamentsIndexRoute: TournamentsIndexRoute,
 }
