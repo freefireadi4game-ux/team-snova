@@ -1,9 +1,9 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows, BarChart3 } from "lucide-react";
+import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows, BarChart3, Mic, Map as MapIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useSession, useIsAdmin } from "@/lib/auth";
+import { useSession, useIsAdmin, useCanVoice } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import snovaLogo from "@/assets/snova-logo.jpg.asset.json";
 
@@ -13,21 +13,19 @@ const NAV = [
   { to: "/tournaments", label: "Tournaments", icon: Trophy },
   { to: "/stats", label: "Stats", icon: BarChart3 },
   { to: "/compare", label: "Compare", icon: GitCompareArrows },
+  { to: "/maps", label: "Maps", icon: MapIcon, voiceOnly: true },
+  { to: "/voice", label: "Voice", icon: Mic, voiceOnly: true },
 ];
 
-const BOTTOM_NAV = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/stats", label: "Stats", icon: BarChart3 },
-  { to: "/compare", label: "Compare", icon: GitCompareArrows },
-];
 
 
 function NavLinks({ onClick }: { onClick?: () => void }) {
   const { data: isAdmin } = useIsAdmin();
+  const { data: canVoice } = useCanVoice();
   const { session } = useSession();
   return (
     <nav className="flex flex-col gap-1 md:flex-row md:items-center md:gap-1">
-      {NAV.map((n) => (
+      {NAV.filter((n) => !n.voiceOnly || canVoice).map((n) => (
         <Link
           key={n.to}
           to={n.to}
@@ -56,12 +54,13 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
           onClick={onClick}
           className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
-          <Shield className="h-4 w-4" /> Admin Login
+          <Shield className="h-4 w-4" /> Sign in
         </Link>
       )}
     </nav>
   );
 }
+
 
 export function Layout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -124,23 +123,44 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="mt-1">Compete. Dominate. Repeat.</div>
       </footer>
 
-      {/* Bottom nav (mobile only) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 backdrop-blur-xl bg-background/85">
-        <div className="mx-auto grid grid-cols-3 max-w-md">
-          {BOTTOM_NAV.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              className="flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
-              activeProps={{ className: "!text-neon" }}
-              activeOptions={{ exact: n.to === "/" }}
-            >
-              <n.icon className="h-5 w-5" />
-              {n.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <BottomNav />
     </div>
   );
 }
+
+function BottomNav() {
+  const { data: canVoice } = useCanVoice();
+  const items = [
+    { to: "/", label: "Home", icon: Home, exact: true },
+    { to: "/stats", label: "Stats", icon: BarChart3 },
+    { to: "/compare", label: "Compare", icon: GitCompareArrows },
+    ...(canVoice
+      ? [
+          { to: "/maps", label: "Maps", icon: MapIcon },
+          { to: "/voice", label: "Voice", icon: Mic },
+        ]
+      : []),
+  ];
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 backdrop-blur-xl bg-background/85">
+      <div
+        className="mx-auto grid max-w-md"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
+        {items.map((n) => (
+          <Link
+            key={n.to}
+            to={n.to}
+            className="flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+            activeProps={{ className: "!text-neon" }}
+            activeOptions={{ exact: !!n.exact }}
+          >
+            <n.icon className="h-5 w-5" />
+            {n.label}
+          </Link>
+        ))}
+      </div>
+    </nav>
+  );
+}
+

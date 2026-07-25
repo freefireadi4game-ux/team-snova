@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { Layout } from "@/components/Layout";
-import { Users, Trophy, LayoutDashboard } from "lucide-react";
+import { Users, Trophy, LayoutDashboard, Map as MapIcon, Link as LinkIcon } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
@@ -10,6 +10,8 @@ const TABS = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/admin/players", label: "Players", icon: Users, exact: false },
   { to: "/admin/tournaments", label: "Tournaments", icon: Trophy, exact: false },
+  { to: "/admin/maps", label: "Maps", icon: MapIcon, exact: false },
+  { to: "/admin/invites", label: "Invites", icon: LinkIcon, exact: false },
 ];
 
 function AdminLayout() {
