@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -30,11 +29,6 @@ import { Route as AuthenticatedAdminMapsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminInvitesRouteImport } from './routes/_authenticated/admin.invites'
 import { Route as AuthenticatedAdminTournamentsIdRouteImport } from './routes/_authenticated/admin.tournaments.$id'
 
-const VoiceRoute = VoiceRouteImport.update({
-  id: '/voice',
-  path: '/voice',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
   path: '/stats',
@@ -139,7 +133,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
   '/stats': typeof StatsRoute
-  '/voice': typeof VoiceRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/join/$token': typeof JoinTokenRoute
   '/maps/$id': typeof MapsIdRoute
@@ -160,7 +153,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
   '/stats': typeof StatsRoute
-  '/voice': typeof VoiceRoute
   '/join/$token': typeof JoinTokenRoute
   '/maps/$id': typeof MapsIdRoute
   '/players/$id': typeof PlayersIdRoute
@@ -182,7 +174,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
   '/stats': typeof StatsRoute
-  '/voice': typeof VoiceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/join/$token': typeof JoinTokenRoute
   '/maps/$id': typeof MapsIdRoute
@@ -205,7 +196,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/compare'
     | '/stats'
-    | '/voice'
     | '/admin'
     | '/join/$token'
     | '/maps/$id'
@@ -226,7 +216,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/compare'
     | '/stats'
-    | '/voice'
     | '/join/$token'
     | '/maps/$id'
     | '/players/$id'
@@ -247,7 +236,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/compare'
     | '/stats'
-    | '/voice'
     | '/_authenticated/admin'
     | '/join/$token'
     | '/maps/$id'
@@ -270,7 +258,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CompareRoute: typeof CompareRoute
   StatsRoute: typeof StatsRoute
-  VoiceRoute: typeof VoiceRoute
   JoinTokenRoute: typeof JoinTokenRoute
   MapsIdRoute: typeof MapsIdRoute
   PlayersIdRoute: typeof PlayersIdRoute
@@ -282,13 +269,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/voice': {
-      id: '/voice'
-      path: '/voice'
-      fullPath: '/voice'
-      preLoaderRoute: typeof VoiceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/stats': {
       id: '/stats'
       path: '/stats'
@@ -477,7 +457,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CompareRoute: CompareRoute,
   StatsRoute: StatsRoute,
-  VoiceRoute: VoiceRoute,
   JoinTokenRoute: JoinTokenRoute,
   MapsIdRoute: MapsIdRoute,
   PlayersIdRoute: PlayersIdRoute,

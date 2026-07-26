@@ -24,6 +24,7 @@ import {
   listPlayers,
   listStatsForPlayer,
   listTournaments,
+  didPlay,
   sum,
   avg,
 } from "@/lib/data";
@@ -45,12 +46,14 @@ function usePlayerAgg(id: string | undefined) {
     enabled: !!id,
   });
   const tournaments = useQuery({ queryKey: ["tournaments"], queryFn: listTournaments });
-  const rows = (stats.data ?? []) as Array<{ kills: number; damage: number }>;
+  const raw = (stats.data ?? []) as Array<{ kills: number; damage: number; assists: number }>;
+  const rows = raw.filter((r) => didPlay(r));
   const mvps = id ? tournaments.data?.filter((t) => t.mvp_player_id === id).length ?? 0 : 0;
   return {
     matches: rows.length,
     totalKills: sum(rows.map((r) => r.kills)),
     totalDamage: sum(rows.map((r) => r.damage)),
+    totalAssists: sum(rows.map((r) => r.assists ?? 0)),
     avgKills: avg(rows.map((r) => r.kills)),
     avgDamage: avg(rows.map((r) => r.damage)),
     mvps,
@@ -69,6 +72,7 @@ function Compare() {
 
   const chart = [
     { metric: "Kills", A: aggA.totalKills, B: aggB.totalKills },
+    { metric: "Assists", A: aggA.totalAssists, B: aggB.totalAssists },
     { metric: "Avg K", A: +aggA.avgKills.toFixed(1), B: +aggB.avgKills.toFixed(1) },
     { metric: "Matches", A: aggA.matches, B: aggB.matches },
     { metric: "MVPs", A: aggA.mvps, B: aggB.mvps },
@@ -127,6 +131,7 @@ function Compare() {
                   {[
                     ["Matches", agg.matches],
                     ["Kills", agg.totalKills],
+                    ["Assists", agg.totalAssists],
                     ["Damage", agg.totalDamage.toLocaleString()],
                     ["Avg K", agg.avgKills.toFixed(1)],
                     ["Avg D", Math.round(agg.avgDamage).toLocaleString()],

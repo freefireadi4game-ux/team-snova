@@ -52,12 +52,14 @@ function PlayerProfile() {
   if (!player.data) throw notFound();
 
   const p = player.data;
-  const rows = (stats.data ?? []) as Array<{
+  const allRows = (stats.data ?? []) as Array<{
     kills: number;
     damage: number;
+    assists: number;
     match_id: string;
     matches: { match_number: number; tournament_id: string; created_at: string } | null;
   }>;
+  const rows = allRows.filter((r) => r.kills > 0 || r.damage > 0 || (r.assists ?? 0) > 0);
 
   const kills = rows.map((r) => r.kills);
   const damage = rows.map((r) => r.damage);

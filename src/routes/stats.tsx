@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  didPlay,
   listAllStats,
   listPlayers,
   listTournaments,
@@ -39,11 +40,15 @@ function StatsPage() {
 
   const loading = players.isLoading || stats.isLoading || tournaments.isLoading;
 
-  const perPlayer = new Map<string, { kills: number; damage: number; matches: number; best: number }>();
+  const perPlayer = new Map<string, { kills: number; damage: number; assists: number; matches: number; best: number }>();
+  const playedMatches = new Set<string>();
   for (const s of stats.data ?? []) {
-    const cur = perPlayer.get(s.player_id) ?? { kills: 0, damage: 0, matches: 0, best: 0 };
+    if (!didPlay(s)) continue; // exclude matches where player didn't participate
+    playedMatches.add(s.match_id);
+    const cur = perPlayer.get(s.player_id) ?? { kills: 0, damage: 0, assists: 0, matches: 0, best: 0 };
     cur.kills += s.kills;
     cur.damage += s.damage;
+    cur.assists += s.assists ?? 0;
     cur.matches += 1;
     if (s.kills > cur.best) cur.best = s.kills;
     perPlayer.set(s.player_id, cur);
@@ -51,11 +56,11 @@ function StatsPage() {
   const rows = (players.data ?? [])
     .filter((p) => perPlayer.has(p.id))
     .map((p) => ({ p, ...perPlayer.get(p.id)! }))
-    .sort((a, b) => b.kills - a.kills);
+    .sort((a, b) => b.kills - a.kills || b.damage - a.damage);
 
   const totalKills = sum([...perPlayer.values()].map((v) => v.kills));
   const totalDamage = sum([...perPlayer.values()].map((v) => v.damage));
-  const totalMatches = stats.data ? new Set(stats.data.map((s) => s.match_id)).size : 0;
+  const totalMatches = playedMatches.size;
 
   return (
     <Layout>
@@ -93,6 +98,7 @@ function StatsPage() {
                 <TableHead>Player</TableHead>
                 <TableHead className="text-right">Matches</TableHead>
                 <TableHead className="text-right">Kills</TableHead>
+                <TableHead className="text-right">Assists</TableHead>
                 <TableHead className="text-right">Avg K</TableHead>
                 <TableHead className="text-right">Best</TableHead>
                 <TableHead className="text-right">Damage</TableHead>
@@ -110,6 +116,7 @@ function StatsPage() {
                   </TableCell>
                   <TableCell className="text-right">{r.matches}</TableCell>
                   <TableCell className="text-right font-bold">{r.kills}</TableCell>
+                  <TableCell className="text-right">{r.assists}</TableCell>
                   <TableCell className="text-right">{(r.kills / r.matches).toFixed(1)}</TableCell>
                   <TableCell className="text-right">{r.best}</TableCell>
                   <TableCell className="text-right">{r.damage.toLocaleString()}</TableCell>
