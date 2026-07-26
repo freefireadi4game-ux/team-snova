@@ -131,6 +131,7 @@ function Compare() {
                   {[
                     ["Matches", agg.matches],
                     ["Kills", agg.totalKills],
+                    ["Assists", agg.totalAssists],
                     ["Damage", agg.totalDamage.toLocaleString()],
                     ["Avg K", agg.avgKills.toFixed(1)],
                     ["Avg D", Math.round(agg.avgDamage).toLocaleString()],
