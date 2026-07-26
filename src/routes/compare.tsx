@@ -24,6 +24,7 @@ import {
   listPlayers,
   listStatsForPlayer,
   listTournaments,
+  didPlay,
   sum,
   avg,
 } from "@/lib/data";
@@ -45,12 +46,14 @@ function usePlayerAgg(id: string | undefined) {
     enabled: !!id,
   });
   const tournaments = useQuery({ queryKey: ["tournaments"], queryFn: listTournaments });
-  const rows = (stats.data ?? []) as Array<{ kills: number; damage: number }>;
+  const raw = (stats.data ?? []) as Array<{ kills: number; damage: number; assists: number }>;
+  const rows = raw.filter((r) => didPlay(r));
   const mvps = id ? tournaments.data?.filter((t) => t.mvp_player_id === id).length ?? 0 : 0;
   return {
     matches: rows.length,
     totalKills: sum(rows.map((r) => r.kills)),
     totalDamage: sum(rows.map((r) => r.damage)),
+    totalAssists: sum(rows.map((r) => r.assists ?? 0)),
     avgKills: avg(rows.map((r) => r.kills)),
     avgDamage: avg(rows.map((r) => r.damage)),
     mvps,
