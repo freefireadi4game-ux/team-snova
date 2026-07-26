@@ -21,7 +21,7 @@ export type Database = {
           id: string
           map_id: string
           points: Json
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           color?: string
@@ -29,7 +29,7 @@ export type Database = {
           id?: string
           map_id: string
           points: Json
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           color?: string
@@ -37,7 +37,7 @@ export type Database = {
           id?: string
           map_id?: string
           points?: Json
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
