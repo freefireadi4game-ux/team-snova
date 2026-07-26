@@ -1,9 +1,9 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows, BarChart3, Mic, Map as MapIcon } from "lucide-react";
+import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows, BarChart3, Map as MapIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useSession, useIsAdmin, useCanVoice } from "@/lib/auth";
+import { useSession, useIsAdmin } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import snovaLogo from "@/assets/snova-logo.jpg.asset.json";
 
@@ -13,19 +13,15 @@ const NAV = [
   { to: "/tournaments", label: "Tournaments", icon: Trophy },
   { to: "/stats", label: "Stats", icon: BarChart3 },
   { to: "/compare", label: "Compare", icon: GitCompareArrows },
-  { to: "/maps", label: "Maps", icon: MapIcon, voiceOnly: true },
-  { to: "/voice", label: "Voice", icon: Mic, voiceOnly: true },
+  { to: "/maps", label: "Maps", icon: MapIcon },
 ];
-
-
 
 function NavLinks({ onClick }: { onClick?: () => void }) {
   const { data: isAdmin } = useIsAdmin();
-  const { data: canVoice } = useCanVoice();
   const { session } = useSession();
   return (
     <nav className="flex flex-col gap-1 md:flex-row md:items-center md:gap-1">
-      {NAV.filter((n) => !n.voiceOnly || canVoice).map((n) => (
+      {NAV.map((n) => (
         <Link
           key={n.to}
           to={n.to}
@@ -81,7 +77,6 @@ export function Layout({ children }: { children: ReactNode }) {
               <img src={snovaLogo.url} alt="Team Snova Esp" className="h-full w-full object-cover" />
             </div>
             <div className="leading-tight">
-
               <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Team</div>
               <div className="text-sm font-black tracking-tight gradient-text">SNOVA ESP</div>
             </div>
@@ -129,17 +124,11 @@ export function Layout({ children }: { children: ReactNode }) {
 }
 
 function BottomNav() {
-  const { data: canVoice } = useCanVoice();
   const items = [
     { to: "/", label: "Home", icon: Home, exact: true },
     { to: "/stats", label: "Stats", icon: BarChart3 },
     { to: "/compare", label: "Compare", icon: GitCompareArrows },
-    ...(canVoice
-      ? [
-          { to: "/maps", label: "Maps", icon: MapIcon },
-          { to: "/voice", label: "Voice", icon: Mic },
-        ]
-      : []),
+    { to: "/maps", label: "Maps", icon: MapIcon },
   ];
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 backdrop-blur-xl bg-background/85">
@@ -163,4 +152,3 @@ function BottomNav() {
     </nav>
   );
 }
-
