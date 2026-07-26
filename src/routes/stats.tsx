@@ -98,6 +98,7 @@ function StatsPage() {
                 <TableHead>Player</TableHead>
                 <TableHead className="text-right">Matches</TableHead>
                 <TableHead className="text-right">Kills</TableHead>
+                <TableHead className="text-right">Assists</TableHead>
                 <TableHead className="text-right">Avg K</TableHead>
                 <TableHead className="text-right">Best</TableHead>
                 <TableHead className="text-right">Damage</TableHead>
@@ -115,6 +116,7 @@ function StatsPage() {
                   </TableCell>
                   <TableCell className="text-right">{r.matches}</TableCell>
                   <TableCell className="text-right font-bold">{r.kills}</TableCell>
+                  <TableCell className="text-right">{r.assists}</TableCell>
                   <TableCell className="text-right">{(r.kills / r.matches).toFixed(1)}</TableCell>
                   <TableCell className="text-right">{r.best}</TableCell>
                   <TableCell className="text-right">{r.damage.toLocaleString()}</TableCell>
