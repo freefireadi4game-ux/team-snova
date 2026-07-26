@@ -72,6 +72,7 @@ function Compare() {
 
   const chart = [
     { metric: "Kills", A: aggA.totalKills, B: aggB.totalKills },
+    { metric: "Assists", A: aggA.totalAssists, B: aggB.totalAssists },
     { metric: "Avg K", A: +aggA.avgKills.toFixed(1), B: +aggB.avgKills.toFixed(1) },
     { metric: "Matches", A: aggA.matches, B: aggB.matches },
     { metric: "MVPs", A: aggA.mvps, B: aggB.mvps },
