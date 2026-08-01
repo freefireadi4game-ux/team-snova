@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows, BarChart3, Map as MapIcon } from "lucide-react";
+import { Menu, Trophy, Users, Home, Shield, LogOut, GitCompareArrows, BarChart3, Map as MapIcon, Medal } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ const NAV = [
   { to: "/players", label: "Roster", icon: Users },
   { to: "/tournaments", label: "Tournaments", icon: Trophy },
   { to: "/stats", label: "Stats", icon: BarChart3 },
+  { to: "/achievements", label: "Achievements", icon: Medal },
   { to: "/compare", label: "Compare", icon: GitCompareArrows },
   { to: "/maps", label: "Maps", icon: MapIcon },
 ];
