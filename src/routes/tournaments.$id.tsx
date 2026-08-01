@@ -184,6 +184,7 @@ function TournamentDetail() {
                 <TableHead>Player</TableHead>
                 <TableHead className="text-right">Matches</TableHead>
                 <TableHead className="text-right">Kills</TableHead>
+                <TableHead className="text-right">Assists</TableHead>
                 <TableHead className="text-right">Damage</TableHead>
                 <TableHead className="text-right">Avg K</TableHead>
               </TableRow>
