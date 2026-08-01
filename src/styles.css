@@ -175,21 +175,32 @@
   pointer-events: none;
 }
 
-/* Prestige auras for high achievement holders */
-@keyframes aura-spin {
-  to { transform: rotate(360deg); }
+/* Prestige auras for high achievement holders — contained, masked gradient border */
+@keyframes aura-sweep {
+  0%   { background-position: 0% 50%; opacity: 0.75; }
+  50%  { background-position: 100% 50%; opacity: 1; }
+  100% { background-position: 0% 50%; opacity: 0.75; }
 }
-.aura { position: relative; isolation: isolate; }
+.aura { position: relative; }
 .aura::before {
   content: "";
   position: absolute;
-  inset: -2px;
+  inset: 0;
   border-radius: inherit;
-  padding: 2px;
-  z-index: -1;
-  background: conic-gradient(from 0deg, transparent 0deg, var(--aura-color) 90deg, transparent 200deg, var(--aura-color) 300deg, transparent 360deg);
-  animation: aura-spin 6s linear infinite;
-  filter: blur(0.5px);
+  padding: 1.5px;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 10%,
+    var(--aura-color) 35%,
+    oklch(1 0 0 / 0.6) 50%,
+    var(--aura-color) 65%,
+    transparent 90%
+  );
+  background-size: 250% 100%;
+  animation: aura-sweep 5s ease-in-out infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
 .aura-bronze { --aura-color: oklch(0.68 0.10 55); }
 .aura-silver { --aura-color: oklch(0.85 0.02 250); }
