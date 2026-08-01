@@ -25,6 +25,23 @@ import {
 import { Crown, Flame, Swords, Zap, Medal, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/tournaments/$id")({
+  head: () => ({
+    meta: [
+      { title: "Tournament — Team SNOVA ESP" },
+      {
+        name: "description",
+        content:
+          "Match-by-match stats, placement points, leaderboard and achievement gallery for this Team SNOVA ESP tournament.",
+      },
+      { property: "og:title", content: "Tournament — Team SNOVA ESP" },
+      {
+        property: "og:description",
+        content: "Match-wise stats, points breakdown and leaderboard for this SNOVA ESP tournament.",
+      },
+      { property: "og:type", content: "article" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: TournamentDetail,
 });
 
