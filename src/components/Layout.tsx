@@ -128,6 +128,7 @@ function BottomNav() {
   const items = [
     { to: "/", label: "Home", icon: Home, exact: true },
     { to: "/stats", label: "Stats", icon: BarChart3 },
+    { to: "/achievements", label: "Awards", icon: Medal },
     { to: "/compare", label: "Compare", icon: GitCompareArrows },
     { to: "/maps", label: "Maps", icon: MapIcon },
   ];
