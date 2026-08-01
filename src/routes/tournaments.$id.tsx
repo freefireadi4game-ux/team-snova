@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  didPlay,
   getTournament,
   listAchievements,
   listPlayers,
