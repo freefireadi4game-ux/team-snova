@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  didPlay,
   getTournament,
   listAchievements,
   listPlayers,
@@ -24,6 +25,23 @@ import {
 import { Crown, Flame, Swords, Zap, Medal, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/tournaments/$id")({
+  head: () => ({
+    meta: [
+      { title: "Tournament — Team SNOVA ESP" },
+      {
+        name: "description",
+        content:
+          "Match-by-match stats, placement points, leaderboard and achievement gallery for this Team SNOVA ESP tournament.",
+      },
+      { property: "og:title", content: "Tournament — Team SNOVA ESP" },
+      {
+        property: "og:description",
+        content: "Match-wise stats, points breakdown and leaderboard for this SNOVA ESP tournament.",
+      },
+      { property: "og:type", content: "article" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: TournamentDetail,
 });
 
@@ -47,19 +65,21 @@ function TournamentDetail() {
   const matches = stats.data?.matches ?? [];
   const allStats = stats.data?.stats ?? [];
 
-  // Per-player aggregate
-  const perPlayer = new Map<string, { kills: number; damage: number; matches: number }>();
+  // Per-player aggregate — a match only counts if the player actually logged something in it.
+  const perPlayer = new Map<string, { kills: number; damage: number; assists: number; matches: number }>();
   for (const s of allStats) {
-    const cur = perPlayer.get(s.player_id) ?? { kills: 0, damage: 0, matches: 0 };
+    const cur = perPlayer.get(s.player_id) ?? { kills: 0, damage: 0, assists: 0, matches: 0 };
     cur.kills += s.kills;
     cur.damage += s.damage;
-    cur.matches += 1;
+    cur.assists += s.assists ?? 0;
+    if (didPlay(s)) cur.matches += 1;
     perPlayer.set(s.player_id, cur);
   }
   const leaderboard = [...perPlayer.entries()]
     .map(([pid, v]) => ({ player: players.data?.find((p) => p.id === pid), ...v }))
-    .filter((r) => r.player)
+    .filter((r) => r.player && r.matches > 0)
     .sort((a, b) => b.kills - a.kills);
+
 
   const teamKills = sum([...perPlayer.values()].map((v) => v.kills));
   const teamDamage = sum([...perPlayer.values()].map((v) => v.damage));
@@ -181,6 +201,7 @@ function TournamentDetail() {
                 <TableHead>Player</TableHead>
                 <TableHead className="text-right">Matches</TableHead>
                 <TableHead className="text-right">Kills</TableHead>
+                <TableHead className="text-right">Assists</TableHead>
                 <TableHead className="text-right">Damage</TableHead>
                 <TableHead className="text-right">Avg K</TableHead>
               </TableRow>
@@ -201,6 +222,7 @@ function TournamentDetail() {
                   </TableCell>
                   <TableCell className="text-right">{r.matches}</TableCell>
                   <TableCell className="text-right font-bold">{r.kills}</TableCell>
+                  <TableCell className="text-right">{r.assists}</TableCell>
                   <TableCell className="text-right">{r.damage.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{(r.kills / r.matches).toFixed(1)}</TableCell>
                 </TableRow>
