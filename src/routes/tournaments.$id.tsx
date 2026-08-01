@@ -205,6 +205,7 @@ function TournamentDetail() {
                   </TableCell>
                   <TableCell className="text-right">{r.matches}</TableCell>
                   <TableCell className="text-right font-bold">{r.kills}</TableCell>
+                  <TableCell className="text-right">{r.assists}</TableCell>
                   <TableCell className="text-right">{r.damage.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{(r.kills / r.matches).toFixed(1)}</TableCell>
                 </TableRow>
