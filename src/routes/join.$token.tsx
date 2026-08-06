@@ -55,7 +55,7 @@ function JoinPlayer() {
             <CheckCircle2 className="h-10 w-10 text-neon mx-auto mb-2" />
             <p className="text-sm text-muted-foreground mb-4">You're in.</p>
             <div className="flex gap-2 justify-center">
-              <Button onClick={() => navigate({ to: "/voice" })}>Team Voice</Button>
+              <Button onClick={() => navigate({ to: "/" })}>Dashboard</Button>
               <Button variant="secondary" onClick={() => navigate({ to: "/maps" })}>Maps</Button>
             </div>
           </>
