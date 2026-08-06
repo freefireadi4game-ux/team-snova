@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,14 +22,40 @@ import {
   positionPoints,
   sum,
 } from "@/lib/data";
+import { addAlias, listAliases, resolvePlayer } from "@/lib/aliases";
+import { parseMatchScreenshot, type OcrRow } from "@/lib/ocr.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
-import { Save, Upload, CheckCircle2, ArrowLeft, Trash2, Trophy } from "lucide-react";
+import {
+  Save,
+  Upload,
+  CheckCircle2,
+  ArrowLeft,
+  Trash2,
+  Trophy,
+  ScanText,
+  Loader2,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/tournaments/$id")({
   component: ManageTournament,
 });
+
+/** Shrink + encode an image so the OCR request stays small and fast. */
+async function toCompactDataUrl(file: File, maxWidth = 1600): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxWidth / bitmap.width);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.9);
+}
 
 function ManageTournament() {
   const { id } = Route.useParams();
