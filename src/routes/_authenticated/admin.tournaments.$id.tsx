@@ -348,6 +348,103 @@ function ManageTournament() {
             </Button>
           </div>
 
+          {/* Screenshot import */}
+          <div className="rounded-xl border border-neon/20 bg-neon-soft/40 p-3 mb-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <ScanText className="h-4 w-4 text-neon" />
+              <div className="flex-1 min-w-[180px]">
+                <div className="text-sm font-semibold">Auto-fill from match screenshot</div>
+                <div className="text-[11px] text-muted-foreground">
+                  Upload the result screen — kills, assists, damage and position are read automatically.
+                  You can still edit everything before saving.
+                </div>
+              </div>
+              <label className="inline-flex">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-lg bg-neon-soft px-3 py-2 text-xs font-semibold text-neon cursor-pointer hover:brightness-110 ${
+                    scanning ? "opacity-60 pointer-events-none" : ""
+                  }`}
+                >
+                  {scanning ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  {scanning ? "Reading…" : "Upload screenshot"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={scanning}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) scanScreenshot(f);
+                  }}
+                />
+              </label>
+            </div>
+
+            {ocrRows && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold">
+                    Detected position:{" "}
+                    <span className="text-neon">{ocrPosition ? `#${ocrPosition}` : "not found"}</span>
+                  </div>
+                  <button
+                    onClick={() => setOcrRows(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Discard scan"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                {ocrRows.map((r, i) => {
+                  const pid = ocrMap[i] ?? "";
+                  const known = (aliases.data ?? []).some(
+                    (a) => a.alias.toLowerCase() === r.name.toLowerCase(),
+                  );
+                  return (
+                    <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg bg-white/[0.04] p-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold truncate">{r.name}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {r.kills} K · {r.assists} A · {r.damage.toLocaleString()} DMG
+                        </div>
+                      </div>
+                      <Select
+                        value={pid}
+                        onValueChange={(v) => setOcrMap({ ...ocrMap, [i]: v })}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Unmatched" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activePlayers.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.ign}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {pid && !known && (
+                        <Button size="sm" variant="secondary" onClick={() => saveMapping(i)}>
+                          Save as mapping
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+                <Button onClick={applyOcr} className="w-full glow">
+                  <CheckCircle2 className="h-4 w-4 mr-1" /> Apply to match
+                </Button>
+              </div>
+            )}
+          </div>
+
+
           {/* Position + points */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4 items-end">
             <div>
