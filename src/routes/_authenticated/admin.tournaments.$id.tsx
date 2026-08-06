@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,14 +22,40 @@ import {
   positionPoints,
   sum,
 } from "@/lib/data";
+import { addAlias, listAliases, resolvePlayer } from "@/lib/aliases";
+import { parseMatchScreenshot, type OcrRow } from "@/lib/ocr.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
-import { Save, Upload, CheckCircle2, ArrowLeft, Trash2, Trophy } from "lucide-react";
+import {
+  Save,
+  Upload,
+  CheckCircle2,
+  ArrowLeft,
+  Trash2,
+  Trophy,
+  ScanText,
+  Loader2,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/tournaments/$id")({
   component: ManageTournament,
 });
+
+/** Shrink + encode an image so the OCR request stays small and fast. */
+async function toCompactDataUrl(file: File, maxWidth = 1600): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxWidth / bitmap.width);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.9);
+}
 
 function ManageTournament() {
   const { id } = Route.useParams();
@@ -43,6 +70,7 @@ function ManageTournament() {
     queryKey: ["tournament-achievements", id],
     queryFn: () => listAchievements(id),
   });
+  const aliases = useQuery({ queryKey: ["player-aliases"], queryFn: listAliases });
 
   const [currentMatchIdx, setCurrentMatchIdx] = useState(0);
   const [edits, setEdits] = useState<Record<string, { kills: string; damage: string; assists: string }>>({});
@@ -52,10 +80,76 @@ function ManageTournament() {
   const [completing, setCompleting] = useState(false);
   const [repairing, setRepairing] = useState(false);
 
+  // Screenshot import
+  const runOcr = useServerFn(parseMatchScreenshot);
+  const [scanning, setScanning] = useState(false);
+  const [ocrRows, setOcrRows] = useState<OcrRow[] | null>(null);
+  const [ocrPosition, setOcrPosition] = useState<number | null>(null);
+  const [ocrMap, setOcrMap] = useState<Record<number, string>>({});
+
   const matches = data.data?.matches ?? [];
   const stats = data.data?.stats ?? [];
   const currentMatch = matches[currentMatchIdx];
   const activePlayers = players.data?.filter((p) => p.status === "active") ?? [];
+
+  const scanScreenshot = async (file: File) => {
+    setScanning(true);
+    setOcrRows(null);
+    try {
+      const imageDataUrl = await toCompactDataUrl(file);
+      const result = await runOcr({ data: { imageDataUrl } });
+      if (!result.rows.length) {
+        toast.error("No scoreboard rows found — try a full, uncropped screenshot");
+        return;
+      }
+      const map: Record<number, string> = {};
+      result.rows.forEach((r, i) => {
+        const hit = resolvePlayer(r.name, activePlayers, aliases.data ?? []);
+        if (hit) map[i] = hit.player.id;
+      });
+      setOcrRows(result.rows);
+      setOcrPosition(result.position);
+      setOcrMap(map);
+      toast.success(`Read ${result.rows.length} player row(s)`);
+    } catch (e: any) {
+      console.error("[ocr]", e);
+      toast.error(e?.message ?? "Couldn't read the screenshot");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const applyOcr = () => {
+    if (!ocrRows) return;
+    const next = { ...edits };
+    for (const p of activePlayers) {
+      next[p.id] = next[p.id] ?? { kills: "0", damage: "0", assists: "0" };
+    }
+    let applied = 0;
+    ocrRows.forEach((r, i) => {
+      const pid = ocrMap[i];
+      if (!pid) return;
+      next[pid] = { kills: String(r.kills), damage: String(r.damage), assists: String(r.assists) };
+      applied++;
+    });
+    setEdits(next);
+    if (ocrPosition) setPosition(String(ocrPosition));
+    setOcrRows(null);
+    toast.success(`Filled ${applied} player(s) — review, edit and save`);
+  };
+
+  const saveMapping = async (rowIdx: number) => {
+    const row = ocrRows?.[rowIdx];
+    const pid = ocrMap[rowIdx];
+    if (!row || !pid) return;
+    try {
+      await addAlias(pid, row.name);
+      await qc.invalidateQueries({ queryKey: ["player-aliases"] });
+      toast.success(`Saved "${row.name}" mapping`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
 
   // Auto-heal: if a tournament has no matches yet, create them from num_matches
   useEffect(() => {
@@ -253,6 +347,103 @@ function ManageTournament() {
               {savingMatch ? "Saving…" : "Save match"}
             </Button>
           </div>
+
+          {/* Screenshot import */}
+          <div className="rounded-xl border border-neon/20 bg-neon-soft/40 p-3 mb-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <ScanText className="h-4 w-4 text-neon" />
+              <div className="flex-1 min-w-[180px]">
+                <div className="text-sm font-semibold">Auto-fill from match screenshot</div>
+                <div className="text-[11px] text-muted-foreground">
+                  Upload the result screen — kills, assists, damage and position are read automatically.
+                  You can still edit everything before saving.
+                </div>
+              </div>
+              <label className="inline-flex">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-lg bg-neon-soft px-3 py-2 text-xs font-semibold text-neon cursor-pointer hover:brightness-110 ${
+                    scanning ? "opacity-60 pointer-events-none" : ""
+                  }`}
+                >
+                  {scanning ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  {scanning ? "Reading…" : "Upload screenshot"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={scanning}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) scanScreenshot(f);
+                  }}
+                />
+              </label>
+            </div>
+
+            {ocrRows && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold">
+                    Detected position:{" "}
+                    <span className="text-neon">{ocrPosition ? `#${ocrPosition}` : "not found"}</span>
+                  </div>
+                  <button
+                    onClick={() => setOcrRows(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Discard scan"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                {ocrRows.map((r, i) => {
+                  const pid = ocrMap[i] ?? "";
+                  const known = (aliases.data ?? []).some(
+                    (a) => a.alias.toLowerCase() === r.name.toLowerCase(),
+                  );
+                  return (
+                    <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg bg-white/[0.04] p-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold truncate">{r.name}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {r.kills} K · {r.assists} A · {r.damage.toLocaleString()} DMG
+                        </div>
+                      </div>
+                      <Select
+                        value={pid}
+                        onValueChange={(v) => setOcrMap({ ...ocrMap, [i]: v })}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Unmatched" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activePlayers.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.ign}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {pid && !known && (
+                        <Button size="sm" variant="secondary" onClick={() => saveMapping(i)}>
+                          Save as mapping
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+                <Button onClick={applyOcr} className="w-full glow">
+                  <CheckCircle2 className="h-4 w-4 mr-1" /> Apply to match
+                </Button>
+              </div>
+            )}
+          </div>
+
 
           {/* Position + points */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4 items-end">
