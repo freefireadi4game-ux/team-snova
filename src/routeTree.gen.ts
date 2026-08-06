@@ -28,6 +28,7 @@ import { Route as AuthenticatedAdminTournamentsRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminPlayersRouteImport } from './routes/_authenticated/admin.players'
 import { Route as AuthenticatedAdminMapsRouteImport } from './routes/_authenticated/admin.maps'
 import { Route as AuthenticatedAdminInvitesRouteImport } from './routes/_authenticated/admin.invites'
+import { Route as AuthenticatedAdminAliasesRouteImport } from './routes/_authenticated/admin.aliases'
 import { Route as AuthenticatedAdminTournamentsIdRouteImport } from './routes/_authenticated/admin.tournaments.$id'
 
 const StatsRoute = StatsRouteImport.update({
@@ -127,6 +128,12 @@ const AuthenticatedAdminInvitesRoute =
     path: '/invites',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAliasesRoute =
+  AuthenticatedAdminAliasesRouteImport.update({
+    id: '/aliases',
+    path: '/aliases',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminTournamentsIdRoute =
   AuthenticatedAdminTournamentsIdRouteImport.update({
     id: '/$id',
@@ -148,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/maps/': typeof MapsIndexRoute
   '/players/': typeof PlayersIndexRoute
   '/tournaments/': typeof TournamentsIndexRoute
+  '/admin/aliases': typeof AuthenticatedAdminAliasesRoute
   '/admin/invites': typeof AuthenticatedAdminInvitesRoute
   '/admin/maps': typeof AuthenticatedAdminMapsRoute
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
@@ -168,6 +176,7 @@ export interface FileRoutesByTo {
   '/maps': typeof MapsIndexRoute
   '/players': typeof PlayersIndexRoute
   '/tournaments': typeof TournamentsIndexRoute
+  '/admin/aliases': typeof AuthenticatedAdminAliasesRoute
   '/admin/invites': typeof AuthenticatedAdminInvitesRoute
   '/admin/maps': typeof AuthenticatedAdminMapsRoute
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
@@ -191,6 +200,7 @@ export interface FileRoutesById {
   '/maps/': typeof MapsIndexRoute
   '/players/': typeof PlayersIndexRoute
   '/tournaments/': typeof TournamentsIndexRoute
+  '/_authenticated/admin/aliases': typeof AuthenticatedAdminAliasesRoute
   '/_authenticated/admin/invites': typeof AuthenticatedAdminInvitesRoute
   '/_authenticated/admin/maps': typeof AuthenticatedAdminMapsRoute
   '/_authenticated/admin/players': typeof AuthenticatedAdminPlayersRoute
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/maps/'
     | '/players/'
     | '/tournaments/'
+    | '/admin/aliases'
     | '/admin/invites'
     | '/admin/maps'
     | '/admin/players'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/maps'
     | '/players'
     | '/tournaments'
+    | '/admin/aliases'
     | '/admin/invites'
     | '/admin/maps'
     | '/admin/players'
@@ -256,6 +268,7 @@ export interface FileRouteTypes {
     | '/maps/'
     | '/players/'
     | '/tournaments/'
+    | '/_authenticated/admin/aliases'
     | '/_authenticated/admin/invites'
     | '/_authenticated/admin/maps'
     | '/_authenticated/admin/players'
@@ -415,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminInvitesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/aliases': {
+      id: '/_authenticated/admin/aliases'
+      path: '/aliases'
+      fullPath: '/admin/aliases'
+      preLoaderRoute: typeof AuthenticatedAdminAliasesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/tournaments/$id': {
       id: '/_authenticated/admin/tournaments/$id'
       path: '/$id'
@@ -440,6 +460,7 @@ const AuthenticatedAdminTournamentsRouteWithChildren =
   )
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAliasesRoute: typeof AuthenticatedAdminAliasesRoute
   AuthenticatedAdminInvitesRoute: typeof AuthenticatedAdminInvitesRoute
   AuthenticatedAdminMapsRoute: typeof AuthenticatedAdminMapsRoute
   AuthenticatedAdminPlayersRoute: typeof AuthenticatedAdminPlayersRoute
@@ -448,6 +469,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAliasesRoute: AuthenticatedAdminAliasesRoute,
   AuthenticatedAdminInvitesRoute: AuthenticatedAdminInvitesRoute,
   AuthenticatedAdminMapsRoute: AuthenticatedAdminMapsRoute,
   AuthenticatedAdminPlayersRoute: AuthenticatedAdminPlayersRoute,
