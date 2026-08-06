@@ -70,6 +70,7 @@ function ManageTournament() {
     queryKey: ["tournament-achievements", id],
     queryFn: () => listAchievements(id),
   });
+  const aliases = useQuery({ queryKey: ["player-aliases"], queryFn: listAliases });
 
   const [currentMatchIdx, setCurrentMatchIdx] = useState(0);
   const [edits, setEdits] = useState<Record<string, { kills: string; damage: string; assists: string }>>({});
@@ -79,10 +80,76 @@ function ManageTournament() {
   const [completing, setCompleting] = useState(false);
   const [repairing, setRepairing] = useState(false);
 
+  // Screenshot import
+  const runOcr = useServerFn(parseMatchScreenshot);
+  const [scanning, setScanning] = useState(false);
+  const [ocrRows, setOcrRows] = useState<OcrRow[] | null>(null);
+  const [ocrPosition, setOcrPosition] = useState<number | null>(null);
+  const [ocrMap, setOcrMap] = useState<Record<number, string>>({});
+
   const matches = data.data?.matches ?? [];
   const stats = data.data?.stats ?? [];
   const currentMatch = matches[currentMatchIdx];
   const activePlayers = players.data?.filter((p) => p.status === "active") ?? [];
+
+  const scanScreenshot = async (file: File) => {
+    setScanning(true);
+    setOcrRows(null);
+    try {
+      const imageDataUrl = await toCompactDataUrl(file);
+      const result = await runOcr({ data: { imageDataUrl } });
+      if (!result.rows.length) {
+        toast.error("No scoreboard rows found — try a full, uncropped screenshot");
+        return;
+      }
+      const map: Record<number, string> = {};
+      result.rows.forEach((r, i) => {
+        const hit = resolvePlayer(r.name, activePlayers, aliases.data ?? []);
+        if (hit) map[i] = hit.player.id;
+      });
+      setOcrRows(result.rows);
+      setOcrPosition(result.position);
+      setOcrMap(map);
+      toast.success(`Read ${result.rows.length} player row(s)`);
+    } catch (e: any) {
+      console.error("[ocr]", e);
+      toast.error(e?.message ?? "Couldn't read the screenshot");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const applyOcr = () => {
+    if (!ocrRows) return;
+    const next = { ...edits };
+    for (const p of activePlayers) {
+      next[p.id] = next[p.id] ?? { kills: "0", damage: "0", assists: "0" };
+    }
+    let applied = 0;
+    ocrRows.forEach((r, i) => {
+      const pid = ocrMap[i];
+      if (!pid) return;
+      next[pid] = { kills: String(r.kills), damage: String(r.damage), assists: String(r.assists) };
+      applied++;
+    });
+    setEdits(next);
+    if (ocrPosition) setPosition(String(ocrPosition));
+    setOcrRows(null);
+    toast.success(`Filled ${applied} player(s) — review, edit and save`);
+  };
+
+  const saveMapping = async (rowIdx: number) => {
+    const row = ocrRows?.[rowIdx];
+    const pid = ocrMap[rowIdx];
+    if (!row || !pid) return;
+    try {
+      await addAlias(pid, row.name);
+      await qc.invalidateQueries({ queryKey: ["player-aliases"] });
+      toast.success(`Saved "${row.name}" mapping`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
 
   // Auto-heal: if a tournament has no matches yet, create them from num_matches
   useEffect(() => {
