@@ -81,7 +81,7 @@ function Compare() {
   return (
     <Layout>
       <div className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-black gradient-text">Player Comparison</h1>
+        <h1 className="font-display text-3xl md:text-4xl gradient-text">Player Comparison</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Head-to-head across every match played.
         </p>

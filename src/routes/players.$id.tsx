@@ -123,10 +123,10 @@ function PlayerProfile() {
         className={`glass rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden animate-rise ${prestigeAuraClass(prestige)}`}
       >
         <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-neon-soft blur-3xl animate-float" />
-        <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={128} className="glow shrink-0" />
+        <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={128} className="shrink-0" />
         <div className="relative text-center md:text-left flex-1 min-w-0">
           <div className="text-[10px] uppercase tracking-[0.25em] text-neon">{p.role}</div>
-          <h1 className="text-3xl md:text-5xl font-black gradient-text truncate">{p.ign}</h1>
+          <h1 className="font-display text-3xl md:text-5xl gradient-text truncate">{p.ign}</h1>
           <div className="mt-2 text-xs text-muted-foreground">
             {p.uid && <>UID {p.uid} · </>}
             Joined {new Date(p.join_date).toLocaleDateString()}

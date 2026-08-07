@@ -72,7 +72,7 @@ function StatsPage() {
   return (
     <Layout>
       <div className="mb-6 animate-rise">
-        <h1 className="text-3xl md:text-4xl font-black gradient-text">Career Stats</h1>
+        <h1 className="font-display text-3xl md:text-4xl gradient-text">Career Stats</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Every kill, every match — filter by month or view the all-time record.
         </p>
@@ -147,7 +147,7 @@ function StatsPage() {
       <section key={`h-${period}`} className="mt-6 grid gap-3 md:grid-cols-3 stagger">
         {rows[0] && (
           <div className="glass rounded-2xl p-4 flex items-center gap-3 neon-border">
-            <PlayerAvatar photoPath={rows[0].player.photo_url} name={rows[0].player.ign} size={52} className="glow shrink-0" />
+            <PlayerAvatar photoPath={rows[0].player.photo_url} name={rows[0].player.ign} size={52} className="shrink-0" />
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.2em] text-neon flex items-center gap-1"><Flame className="h-3 w-3" /> Top Fragger</div>
               <div className="font-bold truncate">{rows[0].player.ign}</div>

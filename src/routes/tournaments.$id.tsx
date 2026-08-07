@@ -174,7 +174,7 @@ function TournamentDetail() {
             { icon: <Crown className="h-4 w-4" />, label: "MVP", p: mvp, meta: "Match Winner" },
           ].filter((r) => r.p).map((r) => (
             <div key={r.label} className="glass rounded-2xl p-4 flex items-center gap-3">
-              <PlayerAvatar photoPath={r.p!.photo_url} name={r.p!.ign} size={52} className="glow shrink-0" />
+              <PlayerAvatar photoPath={r.p!.photo_url} name={r.p!.ign} size={52} className="shrink-0" />
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-neon flex items-center gap-1">
                   {r.icon} {r.label}

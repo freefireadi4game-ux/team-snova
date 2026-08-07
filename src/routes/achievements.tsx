@@ -84,7 +84,7 @@ function AchievementsPage() {
   return (
     <Layout>
       <div className="mb-6 animate-rise">
-        <h1 className="text-3xl md:text-4xl font-black gradient-text">Achievements</h1>
+        <h1 className="font-display text-3xl md:text-4xl gradient-text">Achievements</h1>
         <p className="text-sm text-muted-foreground mt-1">
           {ACHIEVEMENT_COUNT} unlockable achievements, awarded automatically from every match ever
           logged — including all past data.

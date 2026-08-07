@@ -23,7 +23,7 @@ function MapsList() {
   return (
     <Layout>
       <div className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-black gradient-text">Maps</h1>
+        <h1 className="font-display text-3xl md:text-4xl gradient-text">Maps</h1>
         <p className="text-sm text-muted-foreground mt-1">Rotation planning boards. Draw paths, discuss with the team.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">

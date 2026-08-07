@@ -58,7 +58,7 @@ function AuthPage() {
             <div className="grid h-12 w-12 place-items-center rounded-xl glass glow mb-4">
               <Shield className="h-5 w-5 text-neon" />
             </div>
-            <h1 className="text-2xl font-black gradient-text">Admin Access</h1>
+            <h1 className="font-display text-2xl gradient-text">Admin Access</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {mode === "sign-in"
                 ? "Sign in to manage players, tournaments and achievements."
