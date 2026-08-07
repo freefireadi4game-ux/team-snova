@@ -24,7 +24,7 @@ function Tournaments() {
   return (
     <Layout>
       <div className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-black gradient-text">Tournaments</h1>
+        <h1 className="font-display text-3xl md:text-4xl gradient-text">Tournaments</h1>
         <p className="text-sm text-muted-foreground mt-1">Every event we've stepped into.</p>
       </div>
 

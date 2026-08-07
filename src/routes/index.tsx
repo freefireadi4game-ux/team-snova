@@ -110,46 +110,69 @@ function Home() {
 
   return (
     <Layout>
-      {/* Hero */}
-      <section className="rounded-2xl glass p-6 md:p-10 mb-8 relative overflow-hidden animate-rise">
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-          <div className="h-24 w-24 md:h-28 md:w-28 rounded-2xl overflow-hidden ring-2 ring-white/10 shadow-2xl shrink-0">
-            <img src={snovaLogo.url} alt="Team Snova Esp logo" className="h-full w-full object-cover" />
-          </div>
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-neon">
-              <Zap className="h-3 w-3" /> Live Team Dashboard
+      {/* ---------------- Hero band ---------------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-surface/60 animate-rise">
+        <div className="absolute inset-0 grid-texture opacity-40" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neon/50 to-transparent" />
+        <div className="relative grid gap-8 p-6 md:p-10 lg:grid-cols-[1.4fr_1fr] lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-neon">
+              <span className="h-1.5 w-1.5 rounded-full bg-neon animate-pulse-neon" /> Live dashboard
             </div>
-            <h1 className="mt-3 text-4xl md:text-6xl font-display tracking-tight">
-              <span className="gradient-text">Team Snova</span>
-              <span className="text-muted-foreground italic"> Esp</span>
+            <h1 className="mt-4 font-display text-4xl leading-[0.95] md:text-6xl">
+              Team <span className="gradient-text">Snova</span>
+              <br className="hidden md:block" />
+              <span className="text-muted-foreground"> Esports</span>
             </h1>
-            <p className="mt-3 max-w-xl text-sm md:text-base text-muted-foreground leading-relaxed">
-              Every kill. Every match. Every tournament. The board resets each month — the all-time
-              record never does.
+            <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground md:text-base">
+              Every kill, every match, every tournament — tracked. The board resets each month, the
+              all-time record never does.
             </p>
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-2">
               <Link
                 to="/players"
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
                 View Roster <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/achievements"
-                className="inline-flex items-center gap-2 rounded-md border border-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/5 lift"
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-white/[0.05]"
               >
                 <Medal className="h-4 w-4" /> Achievements
               </Link>
             </div>
           </div>
+
+          <div className="flex items-center gap-5 rounded-2xl border border-border bg-background/40 p-5">
+            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl ring-1 ring-white/10 md:h-24 md:w-24">
+              <img src={snovaLogo.url} alt="Team Snova Esp logo" className="h-full w-full object-cover" />
+            </div>
+            <div className="min-w-0 grid grid-cols-2 gap-4">
+              <div>
+                <div className="label-eyebrow">Roster</div>
+                <div className="stat-num mt-1 text-2xl">{activePlayers.length}</div>
+              </div>
+              <div>
+                <div className="label-eyebrow">Events</div>
+                <div className="stat-num mt-1 text-2xl">{tournaments.data?.length ?? 0}</div>
+              </div>
+              <div className="col-span-2 min-w-0">
+                <div className="label-eyebrow">Latest MVP</div>
+                <div className="mt-1 flex items-center gap-2 truncate text-sm font-semibold">
+                  <Crown className="h-4 w-4 shrink-0 text-neon" />
+                  <span className="truncate">{mvpPlayer?.ign ?? "—"}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Period switch */}
-      <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+      {/* ---------------- Period switch ---------------- */}
+      <div className="mt-8 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
         <div>
-          <div className="text-sm font-bold">{periodLabel(period)} Dashboard</div>
+          <h2 className="font-display text-lg md:text-xl">{periodLabel(period)}</h2>
           <div className="text-xs text-muted-foreground">
             {period === OVERALL ? "Career totals since day one" : "Resets at the start of each month"}
           </div>
@@ -157,10 +180,10 @@ function Home() {
         <PeriodToggle value={period} onChange={setPeriod} monthKey={monthKey} />
       </div>
 
-      {/* KPIs */}
-      <section key={period} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 stagger">
+      {/* ---------------- KPI grid ---------------- */}
+      <section key={period} className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 stagger">
         {loading
-          ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)
+          ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
           : (
             <>
               <StatCard label="Tournaments" value={scopedTournaments.length} icon={<Trophy className="h-4 w-4" />} />
@@ -176,155 +199,157 @@ function Home() {
       </section>
 
       {monthEmpty && !loading && (
-        <div className="mt-4 glass rounded-2xl p-4 text-sm text-muted-foreground animate-soft-in">
+        <div className="mt-4 rounded-xl border border-border bg-surface/60 p-4 text-sm text-muted-foreground animate-soft-in">
           Nothing logged in {periodLabel(period)} yet — a fresh month, a fresh board. Switch to
           <button onClick={() => setPeriod(OVERALL)} className="mx-1 text-neon hover:underline">All Time</button>
           to see the full record.
         </div>
       )}
 
-      {/* Latest matches */}
-      <section className="mt-10">
-        <div className="flex items-end justify-between mb-4">
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold">Latest Matches</h2>
-            <div className="text-xs text-muted-foreground">{periodLabel(period)}</div>
-          </div>
-          <Link to="/tournaments" className="text-xs text-neon hover:underline">All tournaments</Link>
-        </div>
-        {entries.isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}
-          </div>
-        ) : recent.length > 0 ? (
-          <div key={period} className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
-            {recent.map((m) => (
-              <Link
-                key={m.match_id}
-                to="/tournaments/$id"
-                params={{ id: m.tournament_id }}
-                className="glass rounded-2xl p-4 lift"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-neon">Match {m.match_number}</span>
-                  {m.position && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neon-soft text-neon">
-                      #{m.position}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2 font-bold truncate text-sm">{m.tournament_name}</div>
-                <div className="mt-3 grid grid-cols-3 gap-1 text-center">
-                  <div>
-                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Kills</div>
-                    <div className="font-display text-lg">{m.kills}</div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Dmg</div>
-                    <div className="font-display text-lg">{(m.damage / 1000).toFixed(1)}k</div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Pts</div>
-                    <div className="font-display text-lg text-neon">{m.points}</div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">
-            No match stats logged in {periodLabel(period)}.
-          </div>
-        )}
-      </section>
-
-      {/* Leaderboard for the selected period */}
-      <section className="mt-10 glass rounded-2xl p-4 md:p-6">
-        <div className="flex items-end justify-between mb-4 gap-3 flex-wrap">
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold">
-              {period === OVERALL ? "All-Time Leaderboard" : "Monthly Leaderboard"}
-            </h2>
-            <div className="text-xs text-muted-foreground truncate">
-              {periodLabel(period)}
-              {mvpPlayer && <span className="text-neon"> · Latest MVP {mvpPlayer.ign}</span>}
+      {/* ---------------- Main split: leaderboard + side rail ---------------- */}
+      <section className="mt-10 grid gap-6 lg:grid-cols-[1.5fr_1fr] lg:items-start">
+        {/* Leaderboard */}
+        <div className="rounded-2xl border border-border bg-surface/60">
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border p-5">
+            <div>
+              <h2 className="font-display text-xl">
+                {period === OVERALL ? "All-Time Leaderboard" : "Monthly Leaderboard"}
+              </h2>
+              <div className="truncate text-xs text-muted-foreground">{periodLabel(period)}</div>
             </div>
+            <Link to="/stats" className="text-xs font-semibold text-neon hover:underline">Full stats →</Link>
           </div>
-          <Link to="/stats" className="text-xs text-neon hover:underline">Full stats</Link>
+
+          {board.length === 0 ? (
+            <div className="py-14 text-center text-sm text-muted-foreground">
+              No stats for {periodLabel(period)}.
+            </div>
+          ) : (
+            <>
+              <div className="hidden grid-cols-[2.5rem_1fr_3rem_3rem_4.5rem] gap-3 px-5 py-2.5 sm:grid label-eyebrow border-b border-border">
+                <div>#</div><div>Player</div>
+                <div className="text-right">K</div><div className="text-right">A</div>
+                <div className="text-right">DMG</div>
+              </div>
+              <div key={period} className="divide-y divide-border stagger">
+                {board.map((r, i) => (
+                  <Link
+                    key={r.player_id}
+                    to="/players/$id"
+                    params={{ id: r.player_id }}
+                    className="grid grid-cols-[2.5rem_1fr_3rem_3rem] items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.04] sm:grid-cols-[2.5rem_1fr_3rem_3rem_4.5rem]"
+                  >
+                    <div
+                      className={`stat-num text-sm ${i === 0 ? "text-neon" : "text-muted-foreground"}`}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </div>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <PlayerAvatar photoPath={r.player.photo_url} name={r.player.ign} size={34} />
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold">{r.player.ign}</div>
+                        <div className="label-eyebrow truncate">{r.player.role} · {r.matches}m</div>
+                      </div>
+                    </div>
+                    <div className="stat-num text-right text-base">{r.kills}</div>
+                    <div className="stat-num text-right text-base text-muted-foreground">{r.assists}</div>
+                    <div className="stat-num hidden text-right text-sm text-muted-foreground sm:block">
+                      {r.damage.toLocaleString()}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
         </div>
-        {board.length === 0 ? (
-          <div className="text-sm text-muted-foreground py-8 text-center">
-            No stats for {periodLabel(period)}.
+
+        {/* Side rail: latest matches */}
+        <div className="rounded-2xl border border-border bg-surface/60">
+          <div className="flex items-end justify-between gap-3 border-b border-border p-5">
+            <div>
+              <h2 className="font-display text-xl">Latest Matches</h2>
+              <div className="text-xs text-muted-foreground">{periodLabel(period)}</div>
+            </div>
+            <Link to="/tournaments" className="text-xs font-semibold text-neon hover:underline">All →</Link>
           </div>
-        ) : (
-          <div key={period} className="grid gap-2 stagger">
-            {board.map((r, i) => (
-              <Link
-                key={r.player_id}
-                to="/players/$id"
-                params={{ id: r.player_id }}
-                className="flex items-center gap-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors p-2.5"
-              >
-                <div className="font-mono text-neon w-6 text-center text-sm">{i + 1}</div>
-                <PlayerAvatar photoPath={r.player.photo_url} name={r.player.ign} size={36} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate text-sm">{r.player.ign}</div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                    {r.player.role} · {r.matches}m
+          {entries.isLoading ? (
+            <div className="space-y-2 p-5">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+            </div>
+          ) : recent.length > 0 ? (
+            <div key={period} className="divide-y divide-border stagger">
+              {recent.map((m) => (
+                <Link
+                  key={m.match_id}
+                  to="/tournaments/$id"
+                  params={{ id: m.tournament_id }}
+                  className="block px-5 py-4 transition-colors hover:bg-white/[0.04]"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="label-eyebrow !text-neon">Match {m.match_number}</span>
+                    {m.position && (
+                      <span className="rounded-md bg-neon-soft px-2 py-0.5 stat-num text-[10px] text-neon">
+                        #{m.position}
+                      </span>
+                    )}
                   </div>
-                </div>
-                <div className="text-right w-12">
-                  <div className="font-display text-xl">{r.kills}</div>
-                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">K</div>
-                </div>
-                <div className="text-right w-12">
-                  <div className="font-display text-base">{r.assists}</div>
-                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">A</div>
-                </div>
-                <div className="text-right w-16 hidden sm:block">
-                  <div className="font-display text-sm">{r.damage.toLocaleString()}</div>
-                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">dmg</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+                  <div className="mt-1.5 truncate text-sm font-semibold">{m.tournament_name}</div>
+                  <div className="mt-2 flex items-center gap-4">
+                    <span className="text-xs text-muted-foreground">
+                      <span className="stat-num text-foreground">{m.kills}</span> kills
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      <span className="stat-num text-foreground">{(m.damage / 1000).toFixed(1)}k</span> dmg
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      <span className="stat-num text-neon">{m.points}</span> pts
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No match stats logged in {periodLabel(period)}.
+            </div>
+          )}
+        </div>
       </section>
 
-      {/* Roster preview */}
-      <section className="mt-10">
-        <div className="flex items-end justify-between mb-4">
-          <h2 className="text-xl md:text-2xl font-bold">Active Roster</h2>
-          <Link to="/players" className="text-xs text-neon hover:underline">View all</Link>
+      {/* ---------------- Roster ---------------- */}
+      <section className="mt-12">
+        <div className="mb-4 flex items-end justify-between border-b border-border pb-3">
+          <h2 className="font-display text-xl md:text-2xl">Active Roster</h2>
+          <Link to="/players" className="text-xs font-semibold text-neon hover:underline">View all →</Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 stagger">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 stagger">
           {activePlayers.slice(0, 5).map((p) => (
             <Link
               key={p.id}
               to="/players/$id"
               params={{ id: p.id }}
-              className="glass rounded-2xl p-4 group lift"
+              className="rounded-xl border border-border bg-surface/60 p-5 lift"
             >
-              <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={64} className="mx-auto glow" />
-              <div className="mt-3 text-center">
-                <div className="font-bold truncate">{p.ign}</div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{p.role}</div>
+              <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={60} className="mx-auto" />
+              <div className="mt-4 text-center">
+                <div className="truncate text-sm font-semibold">{p.ign}</div>
+                <div className="label-eyebrow mt-1 truncate">{p.role}</div>
               </div>
             </Link>
           ))}
           {!activePlayers.length && !loading && (
-            <div className="col-span-full text-center text-sm text-muted-foreground py-10">
+            <div className="col-span-full py-10 text-center text-sm text-muted-foreground">
               No players yet. Admin can add players from the admin panel.
             </div>
           )}
         </div>
       </section>
 
-      {/* Recent tournaments */}
-      <section className="mt-10">
-        <div className="flex items-end justify-between mb-4">
-          <h2 className="text-xl md:text-2xl font-bold">Tournaments</h2>
-          <Link to="/tournaments" className="text-xs text-neon hover:underline">View all</Link>
+      {/* ---------------- Tournaments ---------------- */}
+      <section className="mt-12">
+        <div className="mb-4 flex items-end justify-between border-b border-border pb-3">
+          <h2 className="font-display text-xl md:text-2xl">Tournaments</h2>
+          <Link to="/tournaments" className="text-xs font-semibold text-neon hover:underline">View all →</Link>
         </div>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 stagger">
           {scopedTournaments.slice(0, 6).map((t) => (
@@ -332,30 +357,30 @@ function Home() {
               key={t.id}
               to="/tournaments/$id"
               params={{ id: t.id }}
-              className="glass rounded-2xl p-5 lift"
+              className="rounded-xl border border-border bg-surface/60 p-5 lift"
             >
               <div className="flex items-center justify-between gap-2">
                 <span
-                  className={`text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 rounded-full ${
+                  className={`rounded-md px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] ${
                     t.status === "completed"
                       ? "bg-neon-soft text-neon"
-                      : "bg-white/5 text-muted-foreground"
+                      : "bg-white/[0.06] text-muted-foreground"
                   }`}
                 >
                   {t.status}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="stat-num text-[11px] text-muted-foreground">
                   {new Date(t.date).toLocaleDateString()}
                 </span>
               </div>
-              <div className="mt-3 font-bold text-lg truncate">{t.name}</div>
-              <div className="text-xs text-muted-foreground truncate">
+              <div className="mt-3 truncate font-display text-lg">{t.name}</div>
+              <div className="truncate text-xs text-muted-foreground">
                 {t.organizer ?? "—"} · {t.num_matches} matches
               </div>
             </Link>
           ))}
           {!scopedTournaments.length && !loading && (
-            <div className="col-span-full text-center text-sm text-muted-foreground py-10">
+            <div className="col-span-full py-10 text-center text-sm text-muted-foreground">
               No tournaments in {periodLabel(period)}.
             </div>
           )}
