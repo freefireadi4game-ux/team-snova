@@ -24,12 +24,12 @@ function AdminHome() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Link to="/admin/players" className="glass rounded-2xl p-6 hover:-translate-y-0.5 transition-transform">
+        <Link to="/admin/players" className="glass a-up i-glow-edge rounded-2xl p-6 hover:-translate-y-0.5 transition-transform">
           <Users className="h-6 w-6 text-neon" />
           <div className="mt-3 font-bold text-lg">Manage Players</div>
           <div className="text-xs text-muted-foreground">Add, edit or retire team members.</div>
         </Link>
-        <Link to="/admin/tournaments" className="glass rounded-2xl p-6 hover:-translate-y-0.5 transition-transform">
+        <Link to="/admin/tournaments" className="glass a-up i-glow-edge rounded-2xl p-6 hover:-translate-y-0.5 transition-transform">
           <Trophy className="h-6 w-6 text-neon" />
           <div className="mt-3 font-bold text-lg">Manage Tournaments</div>
           <div className="text-xs text-muted-foreground">Create events, record matches, upload results.</div>

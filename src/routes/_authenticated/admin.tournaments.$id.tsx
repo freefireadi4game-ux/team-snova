@@ -539,7 +539,7 @@ function ManageTournament() {
 
       {/* Complete */}
       {t.status !== "completed" && (
-        <div className="glass rounded-2xl p-4 flex items-center justify-between">
+        <div className="glass a-up i-glow-edge rounded-2xl p-4 flex items-center justify-between">
           <div>
             <div className="font-bold">Finish tournament</div>
             <div className="text-xs text-muted-foreground">
@@ -554,7 +554,7 @@ function ManageTournament() {
       )}
 
       {/* Achievements uploader */}
-      <div className="glass rounded-2xl p-4">
+      <div className="glass a-up i-glow-edge rounded-2xl p-4">
         <h3 className="font-bold mb-3">Achievements</h3>
         <div className="grid gap-2 md:grid-cols-3">
           {(["points_table", "banner", "certificate"] as const).map((kind) => (

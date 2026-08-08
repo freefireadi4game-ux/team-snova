@@ -255,3 +255,252 @@
   .shimmer::after, .aura::before { animation: none; }
   .lift:hover { transform: none; }
 }
+
+/* ==================================================================
+   ALIGNMENT & SPACING AUDIT — global rhythm so cards/tables/charts
+   line up on every breakpoint.
+   ================================================================== */
+
+main :where(section, header) > .grid > * { min-width: 0; height: 100%; }
+main .grid { align-items: stretch; }
+main :where(.glass, .panel) { min-width: 0; }
+
+main table { width: 100%; border-collapse: separate; border-spacing: 0; }
+main :where(th, td) { padding: 0.6rem 0.75rem; vertical-align: middle; white-space: nowrap; }
+main th { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--color-muted-foreground); font-weight: 600; }
+main :where(th, td):first-child { padding-left: 0.25rem; text-align: left; }
+main :where(th, td):not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+main :where(th, td):last-child { padding-right: 0.25rem; }
+main tbody tr { border-top: 1px solid oklch(1 0 0 / 0.06); }
+main .overflow-x-auto { scrollbar-width: thin; }
+
+main .recharts-wrapper { margin-inline: auto; }
+main .recharts-surface { overflow: visible; }
+
+/* ==================================================================
+   MOTION ENGINE — 100+ animations
+   ================================================================== */
+
+/* --- Black hole route transition --- */
+@keyframes bh-collapse {
+  0%   { transform: scale(0); opacity: 0; }
+  35%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(28); opacity: 1; }
+}
+@keyframes bh-expand {
+  0%   { transform: scale(28); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+@keyframes bh-ring {
+  0%   { transform: scale(0.2) rotate(0deg); opacity: 0; }
+  40%  { opacity: 0.85; }
+  100% { transform: scale(6) rotate(220deg); opacity: 0; }
+}
+@keyframes bh-dust { 0% { opacity: 0.5; transform: rotate(0deg); } 100% { opacity: 0; transform: rotate(90deg); } }
+.blackhole-in, .blackhole-out, .blackhole-ring, .blackhole-ring-out, .blackhole-dust {
+  position: absolute; left: var(--hx, 50%); top: var(--hy, 50%);
+  height: 120px; width: 120px; margin: -60px 0 0 -60px; border-radius: 9999px;
+}
+.blackhole-in, .blackhole-out {
+  background: radial-gradient(circle, oklch(0 0 0) 38%, oklch(0.2 0.06 250) 58%, transparent 72%);
+  animation: bh-collapse 0.4s cubic-bezier(0.6, 0, 0.4, 1) both;
+}
+.blackhole-out { animation: bh-expand 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.blackhole-ring, .blackhole-ring-out {
+  background: conic-gradient(from 0deg, transparent, color-mix(in oklab, var(--color-neon) 80%, transparent), transparent 60%);
+  mask: radial-gradient(circle, transparent 52%, #000 56%, #000 66%, transparent 70%);
+  animation: bh-ring 0.6s ease-out both;
+}
+.blackhole-ring-out { animation: bh-ring 0.7s ease-in both reverse; }
+.blackhole-dust {
+  background: repeating-conic-gradient(from 0deg, oklch(1 0 0 / 0.14) 0deg 3deg, transparent 3deg 12deg);
+  mask: radial-gradient(circle, transparent 40%, #000 70%, transparent 90%);
+  animation: bh-dust 0.9s ease-out both;
+}
+@keyframes warp-suck {
+  0% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
+  100% { transform: scale(0.94) translateY(10px); opacity: 0; filter: blur(6px); }
+}
+@keyframes warp-emerge {
+  0% { transform: scale(1.03) translateY(-8px); opacity: 0; filter: blur(5px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
+}
+.warp-suck { animation: warp-suck 0.36s cubic-bezier(0.6, 0, 0.5, 1) both; }
+.warp-emerge { animation: warp-emerge 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* --- Entrances --- */
+@keyframes a-fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes a-up { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
+@keyframes a-down { from { opacity: 0; transform: translateY(-16px) } to { opacity: 1; transform: none } }
+@keyframes a-left { from { opacity: 0; transform: translateX(-22px) } to { opacity: 1; transform: none } }
+@keyframes a-right { from { opacity: 0; transform: translateX(22px) } to { opacity: 1; transform: none } }
+@keyframes a-zoom { from { opacity: 0; transform: scale(0.9) } to { opacity: 1; transform: scale(1) } }
+@keyframes a-zoom-out { from { opacity: 0; transform: scale(1.08) } to { opacity: 1; transform: scale(1) } }
+@keyframes a-blur { from { opacity: 0; filter: blur(10px) } to { opacity: 1; filter: blur(0) } }
+@keyframes a-skew { from { opacity: 0; transform: skewY(4deg) translateY(14px) } to { opacity: 1; transform: none } }
+@keyframes a-flip-x { from { opacity: 0; transform: perspective(700px) rotateX(-60deg) } to { opacity: 1; transform: none } }
+@keyframes a-flip-y { from { opacity: 0; transform: perspective(700px) rotateY(60deg) } to { opacity: 1; transform: none } }
+@keyframes a-roll { from { opacity: 0; transform: translateX(-40px) rotate(-90deg) } to { opacity: 1; transform: none } }
+@keyframes a-drop { 0% { opacity: 0; transform: translateY(-40px) } 70% { transform: translateY(6px) } 100% { opacity: 1; transform: none } }
+@keyframes a-rise-bounce { 0% { opacity: 0; transform: translateY(30px) } 70% { transform: translateY(-6px) } 100% { opacity: 1; transform: none } }
+@keyframes a-unfold { from { opacity: 0; transform: scaleY(0.3); transform-origin: top } to { opacity: 1; transform: scaleY(1) } }
+@keyframes a-curtain { from { clip-path: inset(0 0 100% 0) } to { clip-path: inset(0 0 0 0) } }
+@keyframes a-wipe-left { from { clip-path: inset(0 100% 0 0) } to { clip-path: inset(0 0 0 0) } }
+@keyframes a-wipe-right { from { clip-path: inset(0 0 0 100%) } to { clip-path: inset(0 0 0 0) } }
+@keyframes a-iris { from { clip-path: circle(0% at 50% 50%) } to { clip-path: circle(140% at 50% 50%) } }
+@keyframes a-slide-blur { from { opacity: 0; transform: translateY(24px) scale(0.98); filter: blur(8px) } to { opacity: 1; transform: none; filter: blur(0) } }
+.a-fade { animation: a-fade .5s ease both }
+.a-up { animation: a-up .55s cubic-bezier(.22,1,.36,1) both }
+.a-down { animation: a-down .55s cubic-bezier(.22,1,.36,1) both }
+.a-left { animation: a-left .55s cubic-bezier(.22,1,.36,1) both }
+.a-right { animation: a-right .55s cubic-bezier(.22,1,.36,1) both }
+.a-zoom { animation: a-zoom .45s cubic-bezier(.22,1,.36,1) both }
+.a-zoom-out { animation: a-zoom-out .5s ease-out both }
+.a-blur { animation: a-blur .6s ease-out both }
+.a-skew { animation: a-skew .55s cubic-bezier(.22,1,.36,1) both }
+.a-flip-x { animation: a-flip-x .6s cubic-bezier(.22,1,.36,1) both }
+.a-flip-y { animation: a-flip-y .6s cubic-bezier(.22,1,.36,1) both }
+.a-roll { animation: a-roll .6s cubic-bezier(.22,1,.36,1) both }
+.a-drop { animation: a-drop .6s cubic-bezier(.34,1.56,.64,1) both }
+.a-rise-bounce { animation: a-rise-bounce .65s cubic-bezier(.34,1.56,.64,1) both }
+.a-unfold { animation: a-unfold .5s ease-out both }
+.a-curtain { animation: a-curtain .6s cubic-bezier(.22,1,.36,1) both }
+.a-wipe-left { animation: a-wipe-left .6s cubic-bezier(.22,1,.36,1) both }
+.a-wipe-right { animation: a-wipe-right .6s cubic-bezier(.22,1,.36,1) both }
+.a-iris { animation: a-iris .7s cubic-bezier(.22,1,.36,1) both }
+.a-slide-blur { animation: a-slide-blur .6s cubic-bezier(.22,1,.36,1) both }
+
+/* --- Delays --- */
+.d-1 { animation-delay: .05s } .d-2 { animation-delay: .1s } .d-3 { animation-delay: .15s }
+.d-4 { animation-delay: .2s } .d-5 { animation-delay: .25s } .d-6 { animation-delay: .3s }
+.d-7 { animation-delay: .35s } .d-8 { animation-delay: .4s } .d-9 { animation-delay: .5s }
+.d-10 { animation-delay: .6s }
+
+/* --- Loops / ambience --- */
+@keyframes l-breathe { 0%,100% { transform: scale(1) } 50% { transform: scale(1.03) } }
+@keyframes l-bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+@keyframes l-sway { 0%,100% { transform: rotate(-1.5deg) } 50% { transform: rotate(1.5deg) } }
+@keyframes l-spin { to { transform: rotate(360deg) } }
+@keyframes l-spin-slow { to { transform: rotate(360deg) } }
+@keyframes l-flicker { 0%,100% { opacity: 1 } 45% { opacity: .82 } 47% { opacity: .45 } 49% { opacity: .95 } }
+@keyframes l-blink { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+@keyframes l-heartbeat { 0%,100% { transform: scale(1) } 14% { transform: scale(1.12) } 28% { transform: scale(1) } 42% { transform: scale(1.08) } }
+@keyframes l-radar { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-neon) 45%, transparent) } 100% { box-shadow: 0 0 0 16px transparent } }
+@keyframes l-scanline { 0% { transform: translateY(-100%) } 100% { transform: translateY(400%) } }
+@keyframes l-marquee { 0% { transform: translateX(0) } 100% { transform: translateX(-50%) } }
+@keyframes l-gradient { 0% { background-position: 0% 50% } 100% { background-position: 200% 50% } }
+@keyframes l-hue { 0% { filter: hue-rotate(0) } 100% { filter: hue-rotate(24deg) } }
+@keyframes l-jitter { 0%,100% { transform: translate(0,0) } 25% { transform: translate(.6px,-.6px) } 75% { transform: translate(-.6px,.6px) } }
+@keyframes l-float-x { 0%,100% { transform: translateX(0) } 50% { transform: translateX(6px) } }
+@keyframes l-tilt { 0%,100% { transform: perspective(600px) rotateY(-4deg) } 50% { transform: perspective(600px) rotateY(4deg) } }
+@keyframes l-glowpulse { 0%,100% { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-neon) 18%, transparent) } 50% { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-neon) 55%, transparent) } }
+@keyframes l-orbit { from { transform: rotate(0) translateX(10px) rotate(0) } to { transform: rotate(360deg) translateX(10px) rotate(-360deg) } }
+@keyframes l-wave { 0%,100% { transform: translateY(0) } 25% { transform: translateY(-4px) } 75% { transform: translateY(4px) } }
+@keyframes l-typing { from { width: 0 } to { width: 100% } }
+.l-breathe { animation: l-breathe 4.5s ease-in-out infinite }
+.l-bob { animation: l-bob 3.4s ease-in-out infinite }
+.l-sway { animation: l-sway 5s ease-in-out infinite }
+.l-spin { animation: l-spin 1.1s linear infinite }
+.l-spin-slow { animation: l-spin-slow 14s linear infinite }
+.l-flicker { animation: l-flicker 5s linear infinite }
+.l-blink { animation: l-blink 1.6s ease-in-out infinite }
+.l-heartbeat { animation: l-heartbeat 2.4s ease-in-out infinite }
+.l-radar { animation: l-radar 2s ease-out infinite }
+.l-marquee { animation: l-marquee 22s linear infinite }
+.l-gradient { background-size: 200% 100%; animation: l-gradient 6s linear infinite }
+.l-hue { animation: l-hue 7s ease-in-out infinite alternate }
+.l-jitter { animation: l-jitter 3s steps(4) infinite }
+.l-float-x { animation: l-float-x 4s ease-in-out infinite }
+.l-tilt { animation: l-tilt 7s ease-in-out infinite }
+.l-glowpulse { animation: l-glowpulse 3.2s ease-in-out infinite }
+.l-orbit { animation: l-orbit 8s linear infinite }
+.l-wave { animation: l-wave 3s ease-in-out infinite }
+.l-scan { position: relative; overflow: hidden }
+.l-scan::after {
+  content: ""; position: absolute; inset-inline: 0; top: 0; height: 22%;
+  background: linear-gradient(180deg, transparent, oklch(1 0 0 / 0.06), transparent);
+  animation: l-scanline 5s linear infinite; pointer-events: none;
+}
+
+/* --- Attention / feedback --- */
+@keyframes f-shake { 0%,100% { transform: translateX(0) } 20% { transform: translateX(-6px) } 40% { transform: translateX(6px) } 60% { transform: translateX(-3px) } 80% { transform: translateX(3px) } }
+@keyframes f-pop { 0% { transform: scale(1) } 50% { transform: scale(1.14) } 100% { transform: scale(1) } }
+@keyframes f-press { 0% { transform: scale(1) } 100% { transform: scale(.96) } }
+@keyframes f-rubber { 0% { transform: scale(1,1) } 30% { transform: scale(1.2,.85) } 55% { transform: scale(.9,1.1) } 100% { transform: scale(1,1) } }
+@keyframes f-swing { 0%,100% { transform: rotate(0) } 25% { transform: rotate(6deg) } 75% { transform: rotate(-6deg) } }
+@keyframes f-tada { 0%,100% { transform: scale(1) rotate(0) } 20% { transform: scale(.94) rotate(-3deg) } 50% { transform: scale(1.08) rotate(3deg) } }
+@keyframes f-glitch { 0%,100% { clip-path: inset(0 0 0 0); transform: none } 20% { clip-path: inset(20% 0 40% 0); transform: translateX(-3px) } 40% { clip-path: inset(60% 0 10% 0); transform: translateX(3px) } }
+@keyframes f-flash { 0%,100% { opacity: 1 } 25%,75% { opacity: .3 } }
+@keyframes f-count { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+@keyframes f-ripple { from { transform: scale(0); opacity: .55 } to { transform: scale(3.2); opacity: 0 } }
+@keyframes f-checkmark { from { stroke-dashoffset: 60 } to { stroke-dashoffset: 0 } }
+@keyframes f-bar-grow { from { transform: scaleX(0); transform-origin: left } to { transform: scaleX(1) } }
+@keyframes f-bar-rise { from { transform: scaleY(0); transform-origin: bottom } to { transform: scaleY(1) } }
+@keyframes f-draw { from { stroke-dashoffset: 1000 } to { stroke-dashoffset: 0 } }
+@keyframes f-shimmerbar { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+.f-shake { animation: f-shake .5s ease }
+.f-pop { animation: f-pop .35s ease }
+.f-rubber { animation: f-rubber .6s ease }
+.f-swing { animation: f-swing .6s ease }
+.f-tada { animation: f-tada .7s ease }
+.f-glitch { animation: f-glitch .5s steps(2) }
+.f-flash { animation: f-flash .6s ease }
+.f-count { animation: f-count .5s cubic-bezier(.22,1,.36,1) both }
+.f-bar-grow { animation: f-bar-grow .8s cubic-bezier(.22,1,.36,1) both }
+.f-bar-rise { animation: f-bar-rise .8s cubic-bezier(.22,1,.36,1) both }
+.f-draw { stroke-dasharray: 1000; animation: f-draw 1.4s ease-out both }
+.f-skeleton {
+  background: linear-gradient(90deg, oklch(1 0 0 / .04) 25%, oklch(1 0 0 / .1) 37%, oklch(1 0 0 / .04) 63%);
+  background-size: 200% 100%; animation: f-shimmerbar 1.5s linear infinite;
+}
+
+/* --- Interaction (hover / press) --- */
+.i-lift { transition: transform .35s cubic-bezier(.22,1,.36,1), border-color .3s ease, background-color .3s ease }
+.i-lift:hover { transform: translateY(-4px) }
+.i-grow { transition: transform .3s cubic-bezier(.22,1,.36,1) }
+.i-grow:hover { transform: scale(1.035) }
+.i-shrink { transition: transform .25s ease }
+.i-shrink:active { transform: scale(.97) }
+.i-tilt3d { transition: transform .4s cubic-bezier(.22,1,.36,1) }
+.i-tilt3d:hover { transform: perspective(800px) rotateX(4deg) rotateY(-4deg) translateZ(6px) }
+.i-glow-edge { transition: box-shadow .35s ease, border-color .35s ease }
+.i-glow-edge:hover { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-neon) 45%, transparent) }
+.i-slide-icon :where(svg) { transition: transform .3s cubic-bezier(.22,1,.36,1) }
+.i-slide-icon:hover :where(svg) { transform: translateX(3px) }
+.i-underline { position: relative }
+.i-underline::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; height: 1.5px; width: 100%;
+  background: var(--color-neon); transform: scaleX(0); transform-origin: right;
+  transition: transform .35s cubic-bezier(.22,1,.36,1);
+}
+.i-underline:hover::after { transform: scaleX(1); transform-origin: left }
+.i-sheen { position: relative; overflow: hidden }
+.i-sheen::before {
+  content: ""; position: absolute; inset: 0; transform: translateX(-120%) skewX(-18deg);
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / .14), transparent);
+  transition: transform .7s cubic-bezier(.22,1,.36,1); pointer-events: none;
+}
+.i-sheen:hover::before { transform: translateX(220%) skewX(-18deg) }
+.i-ripple { position: relative; overflow: hidden }
+.i-ripple::after {
+  content: ""; position: absolute; left: 50%; top: 50%; height: 140%; aspect-ratio: 1;
+  translate: -50% -50%; border-radius: 9999px; background: oklch(1 0 0 / .12);
+  transform: scale(0); opacity: 0; pointer-events: none;
+}
+.i-ripple:active::after { animation: f-ripple .6s ease-out }
+
+/* Interaction polish applied globally (presentation only) */
+main :where(button, a, [role="button"]) { transition: transform .25s cubic-bezier(.22,1,.36,1), color .2s ease, background-color .25s ease, border-color .25s ease, opacity .2s ease }
+main :where(button, [role="button"]):active { transform: scale(.97) }
+main :where(.glass, .panel) { transition: transform .4s cubic-bezier(.22,1,.36,1), border-color .35s ease, background-color .35s ease }
+main tbody tr { transition: background-color .25s ease, transform .25s ease }
+main tbody tr:hover { background: oklch(1 0 0 / .035) }
+main img { transition: transform .5s cubic-bezier(.22,1,.36,1), filter .4s ease }
+header a, header button { transition: transform .25s ease, color .2s ease, background-color .25s ease }
+header a:active, header button:active { transform: scale(.95) }
+.recharts-bar-rectangle, .recharts-sector { transition: opacity .25s ease }
+.recharts-bar-rectangle:hover, .recharts-sector:hover { opacity: .82 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important }
+}

@@ -61,7 +61,7 @@ function AdminMaps() {
         <p className="text-sm text-muted-foreground mt-1">Upload map images for rotation planning.</p>
       </div>
 
-      <div className="glass rounded-2xl p-4 grid gap-3 md:grid-cols-3 items-end">
+      <div className="glass a-up i-glow-edge rounded-2xl p-4 grid gap-3 md:grid-cols-3 items-end">
         <div>
           <Label>Map name</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Erangel" />
@@ -77,7 +77,7 @@ function AdminMaps() {
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {maps.data?.map((m: any) => (
-          <div key={m.id} className="glass rounded-2xl overflow-hidden">
+          <div key={m.id} className="glass a-up i-glow-edge rounded-2xl overflow-hidden">
             <TournamentImage path={m.image_url} alt={m.name} className="w-full h-40 object-cover" />
             <div className="p-3 flex items-center justify-between">
               <div className="font-bold truncate">{m.name}</div>

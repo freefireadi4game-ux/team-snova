@@ -81,7 +81,7 @@ function Compare() {
   return (
     <Layout>
       <div className="mb-6">
-        <h1 className="font-display text-3xl md:text-4xl gradient-text">Player Comparison</h1>
+        <h1 className="a-slide-blur font-display text-3xl md:text-4xl gradient-text">Player Comparison</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Head-to-head across every match played.
         </p>
@@ -92,7 +92,7 @@ function Compare() {
           { label: "Player A", value: a, set: setA, other: b },
           { label: "Player B", value: b, set: setB, other: a },
         ].map((s) => (
-          <div key={s.label} className="glass rounded-2xl p-4">
+          <div key={s.label} className="glass a-up i-glow-edge rounded-2xl p-4">
             <label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               {s.label}
             </label>
@@ -121,7 +121,7 @@ function Compare() {
               { p: pA, agg: aggA },
               { p: pB, agg: aggB },
             ].map(({ p, agg }) => (
-              <div key={p.id} className="glass rounded-2xl p-4 md:p-6 text-center">
+              <div key={p.id} className="glass a-up i-glow-edge rounded-2xl p-4 md:p-6 text-center">
                 <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={72} className="mx-auto glow" />
                 <div className="mt-3 font-bold text-lg truncate">{p.ign}</div>
                 <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">

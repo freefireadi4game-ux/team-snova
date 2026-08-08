@@ -150,7 +150,7 @@ function TournamentsList() {
 
       <div className="grid gap-3 md:grid-cols-2">
         {tournaments.data?.map((t) => (
-          <div key={t.id} className="glass rounded-2xl p-4 flex items-center gap-3">
+          <div key={t.id} className="glass a-up i-glow-edge rounded-2xl p-4 flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="font-bold truncate">{t.name}</div>
               <div className="text-xs text-muted-foreground truncate">

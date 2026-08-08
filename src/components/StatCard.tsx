@@ -17,7 +17,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border border-border bg-surface/70 p-4 md:p-5 transition-colors hover:bg-surface",
+        "group i-lift i-sheen i-glow-edge relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface/70 p-4 md:p-5 hover:bg-surface",
         accent && "neon-border",
         className,
       )}
@@ -32,7 +32,7 @@ export function StatCard({
         <div className="label-eyebrow truncate">{label}</div>
         {icon && <div className="shrink-0 text-muted-foreground group-hover:text-neon transition-colors">{icon}</div>}
       </div>
-      <div className="mt-3 stat-num text-2xl md:text-3xl truncate text-foreground">{value}</div>
+      <div className="mt-auto pt-3 stat-num f-count text-2xl md:text-3xl truncate text-foreground">{value}</div>
     </div>
   );
 }

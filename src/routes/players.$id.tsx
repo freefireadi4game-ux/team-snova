@@ -203,7 +203,7 @@ function PlayerProfile() {
           </button>
         </div>
         {shownAchievements.length === 0 ? (
-          <div className="glass rounded-2xl p-6 text-sm text-muted-foreground text-center">
+          <div className="glass a-up i-glow-edge rounded-2xl p-6 text-sm text-muted-foreground text-center">
             No achievements unlocked in {periodLabel(period)} yet.
           </div>
         ) : (
@@ -238,7 +238,7 @@ function PlayerProfile() {
               key={t.id}
               to="/tournaments/$id"
               params={{ id: t.id }}
-              className="glass rounded-2xl p-4 lift"
+              className="glass a-up i-glow-edge rounded-2xl p-4 lift"
             >
               <div className="font-bold truncate">{t.name}</div>
               <div className="text-xs text-muted-foreground">
