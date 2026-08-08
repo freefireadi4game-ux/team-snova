@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import snovaLogo from "@/assets/snova-logo.jpg.asset.json";
+import { PageTransition } from "@/components/PageTransition";
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
@@ -27,7 +28,7 @@ function NavLinks({ onClick, stacked }: { onClick?: () => void; stacked?: boolea
           key={n.to}
           to={n.to}
           onClick={onClick}
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors"
+          className="i-ripple i-slide-icon flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors"
           activeProps={{ className: "!text-foreground !bg-white/[0.08]" }}
           activeOptions={{ exact: n.to === "/" }}
         >
@@ -70,11 +71,11 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/70 backdrop-blur-xl">
+      <header className="a-down sticky top-0 z-40 border-b border-border bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3 lg:px-8">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="h-9 w-9 overflow-hidden rounded-lg ring-1 ring-white/10">
-              <img src={snovaLogo.url} alt="Team Snova Esp" className="h-full w-full object-cover" />
+          <Link to="/" className="i-grow flex items-center gap-3">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg ring-1 ring-white/10">
+              <img src={snovaLogo.url} alt="Team Snova Esp" className="h-full w-full object-cover l-breathe" />
             </div>
             <div className="leading-none">
               <div className="font-display text-sm font-bold tracking-[0.16em] uppercase">Snova</div>
@@ -114,9 +115,11 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 pb-28 pt-6 lg:px-8 lg:pb-16 lg:pt-10">{children}</main>
+      <main className="mx-auto max-w-[1400px] px-4 pb-28 pt-6 lg:px-8 lg:pb-16 lg:pt-10">
+        <PageTransition>{children}</PageTransition>
+      </main>
 
-      <footer className="border-t border-border py-10 pb-32 lg:pb-10">
+      <footer className="a-fade d-3 border-t border-border py-10 pb-32 lg:pb-10">
         <div className="mx-auto flex max-w-[1400px] flex-col items-center gap-2 px-4 text-center lg:flex-row lg:justify-between lg:text-left">
           <div className="font-display text-sm font-bold uppercase tracking-[0.3em]">Team Snova Esp</div>
           <div className="text-xs text-muted-foreground">Compete. Dominate. Repeat.</div>
@@ -138,12 +141,12 @@ function BottomNav() {
   ];
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pt-6 bg-gradient-to-t from-background via-background/90 to-transparent">
-      <nav className="mx-auto flex max-w-md items-center justify-between rounded-2xl border border-border bg-surface/95 p-1.5 backdrop-blur-xl">
+      <nav className="a-up mx-auto flex max-w-md items-center justify-between rounded-2xl border border-border bg-surface/95 p-1.5 backdrop-blur-xl">
         {items.map((n) => (
           <Link
             key={n.to}
             to={n.to}
-            className="flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[9px] uppercase tracking-[0.14em] text-muted-foreground transition-colors"
+            className="i-ripple flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[9px] uppercase tracking-[0.14em] text-muted-foreground transition-colors active:scale-95"
             activeProps={{ className: "!text-neon !bg-neon-soft" }}
             activeOptions={{ exact: !!n.exact }}
           >
