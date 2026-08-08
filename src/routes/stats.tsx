@@ -72,7 +72,7 @@ function StatsPage() {
   return (
     <Layout>
       <div className="mb-6 animate-rise">
-        <h1 className="font-display text-3xl md:text-4xl gradient-text">Career Stats</h1>
+        <h1 className="a-slide-blur font-display text-3xl md:text-4xl gradient-text">Career Stats</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Every kill, every match — filter by month or view the all-time record.
         </p>
@@ -146,7 +146,7 @@ function StatsPage() {
 
       <section key={`h-${period}`} className="mt-6 grid gap-3 md:grid-cols-3 stagger">
         {rows[0] && (
-          <div className="glass rounded-2xl p-4 flex items-center gap-3 neon-border">
+          <div className="glass i-lift rounded-2xl p-4 flex items-center gap-3 neon-border">
             <PlayerAvatar photoPath={rows[0].player.photo_url} name={rows[0].player.ign} size={52} className="shrink-0" />
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.2em] text-neon flex items-center gap-1"><Flame className="h-3 w-3" /> Top Fragger</div>
@@ -158,7 +158,7 @@ function StatsPage() {
         {rows.length > 0 && (() => {
           const dmg = [...rows].sort((a, b) => b.damage - a.damage)[0];
           return (
-            <div className="glass rounded-2xl p-4 flex items-center gap-3">
+            <div className="glass i-lift rounded-2xl p-4 flex items-center gap-3">
               <PlayerAvatar photoPath={dmg.player.photo_url} name={dmg.player.ign} size={52} className="shrink-0" />
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-neon flex items-center gap-1"><Zap className="h-3 w-3" /> Damage Leader</div>
@@ -171,7 +171,7 @@ function StatsPage() {
         {rows.length > 0 && (() => {
           const best = [...rows].sort((a, b) => b.bestKills - a.bestKills)[0];
           return (
-            <div className="glass rounded-2xl p-4 flex items-center gap-3">
+            <div className="glass i-lift rounded-2xl p-4 flex items-center gap-3">
               <PlayerAvatar photoPath={best.player.photo_url} name={best.player.ign} size={52} className="shrink-0" />
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-neon flex items-center gap-1"><Target className="h-3 w-3" /> Best Match</div>

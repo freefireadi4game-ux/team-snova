@@ -23,7 +23,7 @@ function Players() {
   return (
     <Layout>
       <div className="mb-6">
-        <h1 className="font-display text-3xl md:text-4xl gradient-text">Roster</h1>
+        <h1 className="a-slide-blur font-display text-3xl md:text-4xl gradient-text">Roster</h1>
         <p className="text-sm text-muted-foreground mt-1">The squad that plays for the badge.</p>
       </div>
 
@@ -42,7 +42,7 @@ function Players() {
                 key={p.id}
                 to="/players/$id"
                 params={{ id: p.id }}
-                className="glass rounded-2xl p-5 hover:-translate-y-0.5 transition-transform group"
+                className="glass i-lift rounded-2xl p-5 hover:-translate-y-0.5 transition-transform group"
               >
                 <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={80} className="mx-auto glow" />
                 <div className="mt-4 text-center">
@@ -69,7 +69,7 @@ function Players() {
                     key={p.id}
                     to="/players/$id"
                     params={{ id: p.id }}
-                    className="glass rounded-2xl p-5"
+                    className="glass i-lift rounded-2xl p-5"
                   >
                     <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={64} className="mx-auto" />
                     <div className="mt-3 text-center">

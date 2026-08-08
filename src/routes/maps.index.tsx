@@ -23,7 +23,7 @@ function MapsList() {
   return (
     <Layout>
       <div className="mb-6">
-        <h1 className="font-display text-3xl md:text-4xl gradient-text">Maps</h1>
+        <h1 className="a-slide-blur font-display text-3xl md:text-4xl gradient-text">Maps</h1>
         <p className="text-sm text-muted-foreground mt-1">Rotation planning boards. Draw paths, discuss with the team.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -32,7 +32,7 @@ function MapsList() {
             key={m.id}
             to="/maps/$id"
             params={{ id: m.id }}
-            className="glass rounded-2xl overflow-hidden hover:-translate-y-0.5 transition-transform"
+            className="glass i-lift rounded-2xl overflow-hidden hover:-translate-y-0.5 transition-transform"
           >
             <TournamentImage path={m.image_url} alt={m.name} className="w-full h-40 object-cover" />
             <div className="p-3">

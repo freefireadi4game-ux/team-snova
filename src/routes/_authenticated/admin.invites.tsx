@@ -64,7 +64,7 @@ function AdminInvites() {
         </p>
       </div>
 
-      <div className="glass rounded-2xl p-4 flex gap-2 items-end flex-wrap">
+      <div className="glass i-lift rounded-2xl p-4 flex gap-2 items-end flex-wrap">
         <div className="flex-1 min-w-[200px]">
           <Label>Label (optional)</Label>
           <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Main squad" />

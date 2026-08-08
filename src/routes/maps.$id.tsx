@@ -139,7 +139,7 @@ function MapBoard() {
         Tap to drop points — a smooth path builds between them. Hit <span className="text-neon font-semibold">Finish</span> to lock it in.
       </div>
 
-      <div className="glass rounded-2xl p-3 mb-3 flex flex-wrap items-center gap-2">
+      <div className="glass i-lift rounded-2xl p-3 mb-3 flex flex-wrap items-center gap-2">
         <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mr-1">Color</div>
         {COLORS.map((c) => (
           <button

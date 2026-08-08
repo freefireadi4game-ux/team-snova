@@ -24,7 +24,7 @@ function Tournaments() {
   return (
     <Layout>
       <div className="mb-6">
-        <h1 className="font-display text-3xl md:text-4xl gradient-text">Tournaments</h1>
+        <h1 className="a-slide-blur font-display text-3xl md:text-4xl gradient-text">Tournaments</h1>
         <p className="text-sm text-muted-foreground mt-1">Every event we've stepped into.</p>
       </div>
 
@@ -41,7 +41,7 @@ function Tournaments() {
               key={t.id}
               to="/tournaments/$id"
               params={{ id: t.id }}
-              className="glass rounded-2xl p-5 hover:-translate-y-0.5 transition-transform group relative overflow-hidden"
+              className="glass i-lift rounded-2xl p-5 hover:-translate-y-0.5 transition-transform group relative overflow-hidden"
             >
               <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-neon-soft blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative">

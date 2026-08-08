@@ -151,7 +151,7 @@ function PlayersAdmin() {
 
       <div className="grid gap-3 md:grid-cols-2">
         {players.data?.map((p) => (
-          <div key={p.id} className="glass rounded-2xl p-4 flex items-center gap-3">
+          <div key={p.id} className="glass i-lift rounded-2xl p-4 flex items-center gap-3">
             <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={48} />
             <div className="flex-1 min-w-0">
               <div className="font-bold truncate">{p.ign}</div>

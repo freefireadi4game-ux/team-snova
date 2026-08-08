@@ -20,10 +20,10 @@ function AdminLayout() {
     <Layout>
       <div className="mb-6">
         <div className="text-[10px] uppercase tracking-[0.25em] text-neon">Admin Panel</div>
-        <h1 className="font-display text-3xl md:text-4xl gradient-text">Control Center</h1>
+        <h1 className="a-slide-blur font-display text-3xl md:text-4xl gradient-text">Control Center</h1>
       </div>
 
-      <div className="glass rounded-2xl p-1.5 mb-6 inline-flex flex-wrap gap-1">
+      <div className="glass i-lift rounded-2xl p-1.5 mb-6 inline-flex flex-wrap gap-1">
         {TABS.map((t) => (
           <Link
             key={t.to}
