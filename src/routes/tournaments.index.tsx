@@ -41,7 +41,7 @@ function Tournaments() {
               key={t.id}
               to="/tournaments/$id"
               params={{ id: t.id }}
-              className="glass i-lift rounded-2xl p-5 hover:-translate-y-0.5 transition-transform group relative overflow-hidden"
+              className="glass a-up i-glow-edge rounded-2xl p-5 hover:-translate-y-0.5 transition-transform group relative overflow-hidden"
             >
               <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-neon-soft blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative">

@@ -56,7 +56,7 @@ function AliasesAdmin() {
         </p>
       </div>
 
-      <div className="glass i-lift rounded-2xl p-4 grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+      <div className="glass a-up i-glow-edge rounded-2xl p-4 grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
         <div>
           <Label className="text-xs">Roster player</Label>
           <Select value={playerId} onValueChange={setPlayerId}>
@@ -89,7 +89,7 @@ function AliasesAdmin() {
         {players.data?.map((p) => {
           const mine = aliases.data?.filter((a) => a.player_id === p.id) ?? [];
           return (
-            <div key={p.id} className="glass i-lift rounded-2xl p-4">
+            <div key={p.id} className="glass a-up i-glow-edge rounded-2xl p-4">
               <div className="flex items-center gap-3">
                 <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={40} />
                 <div className="min-w-0">

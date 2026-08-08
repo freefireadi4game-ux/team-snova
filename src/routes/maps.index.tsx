@@ -32,7 +32,7 @@ function MapsList() {
             key={m.id}
             to="/maps/$id"
             params={{ id: m.id }}
-            className="glass i-lift rounded-2xl overflow-hidden hover:-translate-y-0.5 transition-transform"
+            className="glass a-up i-glow-edge rounded-2xl overflow-hidden hover:-translate-y-0.5 transition-transform"
           >
             <TournamentImage path={m.image_url} alt={m.name} className="w-full h-40 object-cover" />
             <div className="p-3">

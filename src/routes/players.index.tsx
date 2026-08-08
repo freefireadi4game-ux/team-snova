@@ -42,7 +42,7 @@ function Players() {
                 key={p.id}
                 to="/players/$id"
                 params={{ id: p.id }}
-                className="glass i-lift rounded-2xl p-5 hover:-translate-y-0.5 transition-transform group"
+                className="glass a-up i-glow-edge rounded-2xl p-5 hover:-translate-y-0.5 transition-transform group"
               >
                 <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={80} className="mx-auto glow" />
                 <div className="mt-4 text-center">
@@ -69,7 +69,7 @@ function Players() {
                     key={p.id}
                     to="/players/$id"
                     params={{ id: p.id }}
-                    className="glass i-lift rounded-2xl p-5"
+                    className="glass a-up i-glow-edge rounded-2xl p-5"
                   >
                     <PlayerAvatar photoPath={p.photo_url} name={p.ign} size={64} className="mx-auto" />
                     <div className="mt-3 text-center">

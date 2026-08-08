@@ -96,7 +96,7 @@ function TournamentDetail() {
 
   return (
     <Layout>
-      <section className="glass i-lift rounded-2xl p-6 md:p-8">
+      <section className="glass a-up i-glow-edge rounded-2xl p-6 md:p-8">
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={`text-[10px] uppercase tracking-[0.25em] px-2 py-0.5 rounded-full ${
@@ -173,7 +173,7 @@ function TournamentDetail() {
             { icon: <Zap className="h-4 w-4" />, label: "Damage Leader", p: damageLeader?.player, meta: `${damageLeader?.damage.toLocaleString()} dmg` },
             { icon: <Crown className="h-4 w-4" />, label: "MVP", p: mvp, meta: "Match Winner" },
           ].filter((r) => r.p).map((r) => (
-            <div key={r.label} className="glass i-lift rounded-2xl p-4 flex items-center gap-3">
+            <div key={r.label} className="glass a-up i-glow-edge rounded-2xl p-4 flex items-center gap-3">
               <PlayerAvatar photoPath={r.p!.photo_url} name={r.p!.ign} size={52} className="shrink-0" />
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-neon flex items-center gap-1">
@@ -282,7 +282,7 @@ function TournamentDetail() {
           </h2>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {ach.data.map((a) => (
-              <div key={a.id} className="glass i-lift rounded-2xl overflow-hidden">
+              <div key={a.id} className="glass a-up i-glow-edge rounded-2xl overflow-hidden">
                 <TournamentImage
                   path={a.image_url}
                   alt={a.kind}
