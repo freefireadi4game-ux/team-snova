@@ -217,7 +217,7 @@ function Home() {
               </h2>
               <div className="truncate text-xs text-muted-foreground">{periodLabel(period)}</div>
             </div>
-            <Link to="/stats" className="text-xs font-semibold text-neon hover:underline">Full stats →</Link>
+            <Link to="/analytics" className="text-xs font-semibold text-neon hover:underline">Full analytics →</Link>
           </div>
 
           {board.length === 0 ? (
