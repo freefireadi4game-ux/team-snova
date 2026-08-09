@@ -12,7 +12,7 @@ const NAV = [
   { to: "/", label: "Home", icon: Home },
   { to: "/players", label: "Roster", icon: Users },
   { to: "/tournaments", label: "Tournaments", icon: Trophy },
-  { to: "/stats", label: "Stats", icon: BarChart3 },
+  { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/achievements", label: "Achievements", icon: Medal },
   { to: "/compare", label: "Compare", icon: GitCompareArrows },
   { to: "/maps", label: "Maps", icon: MapIcon },
@@ -134,7 +134,7 @@ export function Layout({ children }: { children: ReactNode }) {
 function BottomNav() {
   const items = [
     { to: "/", label: "Home", icon: Home, exact: true },
-    { to: "/stats", label: "Stats", icon: BarChart3 },
+    { to: "/analytics", label: "Analytics", icon: BarChart3 },
     { to: "/achievements", label: "Awards", icon: Medal },
     { to: "/compare", label: "Compare", icon: GitCompareArrows },
     { to: "/maps", label: "Maps", icon: MapIcon },
