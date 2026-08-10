@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSignedUrl } from "@/lib/storage";
 import { listPoiImages, type Poi } from "@/lib/tactical";
@@ -46,8 +47,8 @@ export function PoiPanel({
     },
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-background/95 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-background/95 backdrop-blur-sm">
       <div className="mx-auto max-w-4xl p-3 pb-24">
         <div
           className="glass rounded-2xl p-3 mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"
@@ -122,5 +123,7 @@ export function PoiPanel({
         )}
       </div>
     </div>
+    </div>,
+    document.body,
   );
 }
