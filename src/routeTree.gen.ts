@@ -26,6 +26,7 @@ import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminTournamentsRouteImport } from './routes/_authenticated/admin.tournaments'
+import { Route as AuthenticatedAdminPoisRouteImport } from './routes/_authenticated/admin.pois'
 import { Route as AuthenticatedAdminPlayersRouteImport } from './routes/_authenticated/admin.players'
 import { Route as AuthenticatedAdminMapsRouteImport } from './routes/_authenticated/admin.maps'
 import { Route as AuthenticatedAdminInvitesRouteImport } from './routes/_authenticated/admin.invites'
@@ -117,6 +118,11 @@ const AuthenticatedAdminTournamentsRoute =
     path: '/tournaments',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminPoisRoute = AuthenticatedAdminPoisRouteImport.update({
+  id: '/pois',
+  path: '/pois',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAdminPlayersRoute =
   AuthenticatedAdminPlayersRouteImport.update({
     id: '/players',
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/admin/invites': typeof AuthenticatedAdminInvitesRoute
   '/admin/maps': typeof AuthenticatedAdminMapsRoute
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
+  '/admin/pois': typeof AuthenticatedAdminPoisRoute
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/tournaments/$id': typeof AuthenticatedAdminTournamentsIdRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/admin/invites': typeof AuthenticatedAdminInvitesRoute
   '/admin/maps': typeof AuthenticatedAdminMapsRoute
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
+  '/admin/pois': typeof AuthenticatedAdminPoisRoute
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/tournaments/$id': typeof AuthenticatedAdminTournamentsIdRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/invites': typeof AuthenticatedAdminInvitesRoute
   '/_authenticated/admin/maps': typeof AuthenticatedAdminMapsRoute
   '/_authenticated/admin/players': typeof AuthenticatedAdminPlayersRoute
+  '/_authenticated/admin/pois': typeof AuthenticatedAdminPoisRoute
   '/_authenticated/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/tournaments/$id': typeof AuthenticatedAdminTournamentsIdRoute
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/admin/invites'
     | '/admin/maps'
     | '/admin/players'
+    | '/admin/pois'
     | '/admin/tournaments'
     | '/admin/'
     | '/admin/tournaments/$id'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/admin/invites'
     | '/admin/maps'
     | '/admin/players'
+    | '/admin/pois'
     | '/admin/tournaments'
     | '/admin'
     | '/admin/tournaments/$id'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invites'
     | '/_authenticated/admin/maps'
     | '/_authenticated/admin/players'
+    | '/_authenticated/admin/pois'
     | '/_authenticated/admin/tournaments'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/tournaments/$id'
@@ -427,6 +439,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTournamentsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/pois': {
+      id: '/_authenticated/admin/pois'
+      path: '/pois'
+      fullPath: '/admin/pois'
+      preLoaderRoute: typeof AuthenticatedAdminPoisRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/players': {
       id: '/_authenticated/admin/players'
       path: '/players'
@@ -484,6 +503,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminInvitesRoute: typeof AuthenticatedAdminInvitesRoute
   AuthenticatedAdminMapsRoute: typeof AuthenticatedAdminMapsRoute
   AuthenticatedAdminPlayersRoute: typeof AuthenticatedAdminPlayersRoute
+  AuthenticatedAdminPoisRoute: typeof AuthenticatedAdminPoisRoute
   AuthenticatedAdminTournamentsRoute: typeof AuthenticatedAdminTournamentsRouteWithChildren
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
@@ -493,6 +513,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminInvitesRoute: AuthenticatedAdminInvitesRoute,
   AuthenticatedAdminMapsRoute: AuthenticatedAdminMapsRoute,
   AuthenticatedAdminPlayersRoute: AuthenticatedAdminPlayersRoute,
+  AuthenticatedAdminPoisRoute: AuthenticatedAdminPoisRoute,
   AuthenticatedAdminTournamentsRoute:
     AuthenticatedAdminTournamentsRouteWithChildren,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
@@ -532,13 +553,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
