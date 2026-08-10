@@ -122,8 +122,8 @@ export function PoiPanel({
           </div>
         )}
       </div>
-    </div>
     </div>,
     document.body,
   );
 }
+
