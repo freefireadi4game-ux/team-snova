@@ -631,3 +631,11 @@ a:hover img, .i-lift:hover img { transform: scale(1.05) }
     transition-duration: .01ms !important;
   }
 }
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

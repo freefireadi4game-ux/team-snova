@@ -49,6 +49,97 @@ export type Database = {
           },
         ]
       }
+      map_poi_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          is_thumbnail: boolean
+          poi_id: string
+          sort_order: number
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          is_thumbnail?: boolean
+          poi_id: string
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_thumbnail?: boolean
+          poi_id?: string
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_poi_images_poi_id_fkey"
+            columns: ["poi_id"]
+            isOneToOne: false
+            referencedRelation: "map_pois"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      map_pois: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          map_id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          x: number
+          y: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          map_id: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          x: number
+          y: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          map_id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_pois_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maps: {
         Row: {
           created_at: string
@@ -238,6 +329,73 @@ export type Database = {
           uid?: string | null
         }
         Relationships: []
+      }
+      tactical_annotations: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          kind: string
+          map_id: string | null
+          meta: Json
+          player_id: string | null
+          poi_image_id: string | null
+          points: Json
+          scope: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          kind: string
+          map_id?: string | null
+          meta?: Json
+          player_id?: string | null
+          poi_image_id?: string | null
+          points?: Json
+          scope: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          map_id?: string | null
+          meta?: Json
+          player_id?: string | null
+          poi_image_id?: string | null
+          points?: Json
+          scope?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tactical_annotations_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tactical_annotations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tactical_annotations_poi_image_id_fkey"
+            columns: ["poi_image_id"]
+            isOneToOne: false
+            referencedRelation: "map_poi_images"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tournament_achievements: {
         Row: {
