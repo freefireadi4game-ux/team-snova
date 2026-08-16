@@ -1,3 +1,12 @@
+export type PlayerRole =
+  | "IGL"
+  | "Rusher"
+  | "Sniper"
+  | "Support"
+  | "Fragger"
+  | "Flex"
+  | "Other";
+
 export type BenchmarkSourceType =
   | "training"
   | "battle_royale"
@@ -16,6 +25,8 @@ export type BenchmarkMetric =
   | "placement"
   | "matches"
   | "assists"
+  | "elimination_streak"
+  | "kd_ratio"
   | "custom";
 
 export type BenchmarkStatus = "draft" | "active" | "inactive";
@@ -43,6 +54,7 @@ export type Benchmark = {
   description: string | null;
   source_type: BenchmarkSourceType;
   status: BenchmarkStatus;
+  role: PlayerRole | "all";
   created_at?: string;
   updated_at?: string;
   requirements: BenchmarkRequirement[];
@@ -75,6 +87,8 @@ export type ExtractedBenchmarkStats = {
   placement: number | null;
   matches: number | null;
   assists: number | null;
+  elimination_streak: number | null;
+  kd_ratio: number | null;
   mode: string | null;
   source_type: BenchmarkSourceType | null;
   confidence: number;
