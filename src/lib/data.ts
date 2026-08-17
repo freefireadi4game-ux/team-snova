@@ -5,6 +5,7 @@ export type Player = {
   ign: string;
   role: string;
   uid: string | null;
+  user_id: string | null;
   photo_url: string | null;
   join_date: string;
   status: "active" | "inactive";
