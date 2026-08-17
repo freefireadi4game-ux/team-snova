@@ -3,22 +3,22 @@ import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { BenchmarkCard } from "@/components/benchmark/BenchmarkCard";
 import { BENCHMARKS } from "@/data/benchmarks";
-import { listPlayers } from "@/lib/data";
+import { getAuthenticatedPlayer } from "@/lib/benchmark/player";
 import type { PlayerRole } from "@/lib/benchmark";
+import { ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/benchmarks")({
   component: BenchmarksPage,
 });
 
 function BenchmarksPage() {
-  const players = useQuery({
-    queryKey: ["players"],
-    queryFn: listPlayers,
+  const player = useQuery({
+    queryKey: ["authenticated-player"],
+    queryFn: getAuthenticatedPlayer,
+    staleTime: 60_000,
   });
 
-  const currentPlayer = players.data?.find(
-    (player) => player.status === "active",
-  );
+  const currentPlayer = player.data;
 
   const playerRole = (currentPlayer?.role ?? "Other") as PlayerRole;
 
@@ -45,14 +45,39 @@ function BenchmarksPage() {
             performance with screenshot evidence.
           </p>
 
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-neon-soft px-3 py-1.5 text-xs font-semibold text-neon">
-            Your role: {playerRole}
-          </div>
+          {player.isLoading ? (
+            <div className="mt-4 text-xs text-muted-foreground">
+              Loading your player profile…
+            </div>
+          ) : currentPlayer ? (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-neon-soft px-3 py-1.5 text-xs font-semibold text-neon">
+              {currentPlayer.ign} · {currentPlayer.role}
+            </div>
+          ) : (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-3 text-xs text-yellow-300">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                Your login account is not linked to a team player yet.
+                Ask the admin to link your account from Player Management.
+              </div>
+            </div>
+          )}
         </section>
 
-        {players.isLoading ? (
+        {player.isLoading ? (
           <div className="rounded-2xl border border-border bg-surface/60 p-6 text-sm text-muted-foreground">
             Loading benchmarks…
+          </div>
+        ) : !currentPlayer ? (
+          <div className="rounded-2xl border border-border bg-surface/60 p-8 text-center">
+            <div className="font-semibold">
+              No player account linked
+            </div>
+
+            <div className="mt-1 text-sm text-muted-foreground">
+              Your admin must link this login to a roster player before
+              benchmarks can be assigned.
+            </div>
           </div>
         ) : visibleBenchmarks.length === 0 ? (
           <div className="rounded-2xl border border-border bg-surface/60 p-8 text-center">
@@ -61,7 +86,7 @@ function BenchmarksPage() {
             </div>
 
             <div className="mt-1 text-sm text-muted-foreground">
-              Your role currently has no assigned drills.
+              No benchmark is currently assigned to your role.
             </div>
           </div>
         ) : (
