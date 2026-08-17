@@ -1,6 +1,15 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { Layout } from "@/components/Layout";
-import { Users, Trophy, LayoutDashboard, Map as MapIcon, MapPin, Link as LinkIcon, ScanText } from "lucide-react";
+import {
+  Users,
+  Trophy,
+  LayoutDashboard,
+  Map as MapIcon,
+  MapPin,
+  Link as LinkIcon,
+  ScanText,
+  Target,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
@@ -11,6 +20,7 @@ const TABS = [
   { to: "/admin/players", label: "Players", icon: Users, exact: false },
   { to: "/admin/aliases", label: "Name Map", icon: ScanText, exact: false },
   { to: "/admin/tournaments", label: "Tournaments", icon: Trophy, exact: false },
+  { to: "/admin/benchmarks", label: "Benchmarks", icon: Target, exact: false },
   { to: "/admin/maps", label: "Maps", icon: MapIcon, exact: false },
   { to: "/admin/pois", label: "Locations", icon: MapPin, exact: false },
   { to: "/admin/invites", label: "Invites", icon: LinkIcon, exact: false },
@@ -20,8 +30,13 @@ function AdminLayout() {
   return (
     <Layout>
       <div className="mb-6">
-        <div className="text-[10px] uppercase tracking-[0.25em] text-neon">Admin Panel</div>
-        <h1 className="a-slide-blur font-display text-3xl md:text-4xl gradient-text">Control Center</h1>
+        <div className="text-[10px] uppercase tracking-[0.25em] text-neon">
+          Admin Panel
+        </div>
+
+        <h1 className="a-slide-blur font-display text-3xl md:text-4xl gradient-text">
+          Control Center
+        </h1>
       </div>
 
       <div className="glass a-up i-glow-edge rounded-2xl p-1.5 mb-6 inline-flex flex-wrap gap-1">
