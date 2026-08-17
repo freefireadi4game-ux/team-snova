@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { BenchmarkCard } from "@/components/benchmark/BenchmarkCard";
@@ -16,12 +16,6 @@ function BenchmarksPage() {
     queryFn: listPlayers,
   });
 
-  /**
-   * Current authenticated user -> player mapping will be connected
-   * properly later using the existing auth/profile system.
-   *
-   * For now, use the first active player as a safe development fallback.
-   */
   const currentPlayer = players.data?.find(
     (player) => player.status === "active",
   );
@@ -73,17 +67,18 @@ function BenchmarksPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {visibleBenchmarks.map((benchmark) => (
-              <BenchmarkCard
+              <Link
                 key={benchmark.id}
-                benchmark={benchmark}
-                onClick={() => {
-                  window.location.href = `/benchmarks/${benchmark.id}`;
-                }}
-              />
+                to="/benchmarks/$id"
+                params={{ id: benchmark.id }}
+                className="block"
+              >
+                <BenchmarkCard benchmark={benchmark} />
+              </Link>
             ))}
           </div>
         )}
       </div>
     </Layout>
   );
-    }
+}
