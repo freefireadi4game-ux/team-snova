@@ -697,3 +697,42 @@ function AdminBenchmarksPage() {
                             removeRequirement(index)
                           }
                   
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ),
+                )}
+
+                {editing.requirements.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+                    No requirements yet. Add at least one.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Button type="button" className="glow" onClick={saveBenchmark}>
+                <Save className="mr-2 h-4 w-4" />
+                Save benchmark
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditing(null);
+                  setIsCreating(false);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </section>
+        )}
+      </div>
+    </Layout>
+  );
+}
