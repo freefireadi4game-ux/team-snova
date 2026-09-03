@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as PlayerLoginRouteImport } from './routes/player-login'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -39,6 +40,11 @@ import { Route as AuthenticatedAdminTournamentsIdRouteImport } from './routes/_a
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
   path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayerLoginRoute = PlayerLoginRouteImport.update({
+  id: '/player-login',
+  path: '/player-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompareRoute = CompareRouteImport.update({
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
+  '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
+  '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
   '/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
   '/join/$token': typeof JoinTokenRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
   '/compare': typeof CompareRoute
+  '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
@@ -263,6 +272,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/auth'
     | '/compare'
+    | '/player-login'
     | '/stats'
     | '/admin'
     | '/benchmarks'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/auth'
     | '/compare'
+    | '/player-login'
     | '/stats'
     | '/benchmarks'
     | '/join/$token'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/auth'
     | '/compare'
+    | '/player-login'
     | '/stats'
     | '/_authenticated/admin'
     | '/_authenticated/benchmarks'
@@ -346,6 +358,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   AuthRoute: typeof AuthRoute
   CompareRoute: typeof CompareRoute
+  PlayerLoginRoute: typeof PlayerLoginRoute
   StatsRoute: typeof StatsRoute
   JoinTokenRoute: typeof JoinTokenRoute
   MapsIdRoute: typeof MapsIdRoute
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/player-login': {
+      id: '/player-login'
+      path: '/player-login'
+      fullPath: '/player-login'
+      preLoaderRoute: typeof PlayerLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compare': {
@@ -618,6 +638,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   AuthRoute: AuthRoute,
   CompareRoute: CompareRoute,
+  PlayerLoginRoute: PlayerLoginRoute,
   StatsRoute: StatsRoute,
   JoinTokenRoute: JoinTokenRoute,
   MapsIdRoute: MapsIdRoute,
