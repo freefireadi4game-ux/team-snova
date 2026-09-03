@@ -14,6 +14,182 @@ export type Database = {
   }
   public: {
     Tables: {
+      benchmark_requirements: {
+        Row: {
+          benchmark_id: string
+          created_at: string
+          id: string
+          label: string
+          metric: string
+          operator: string
+          required: boolean
+          source_type: string | null
+          target_value: number
+        }
+        Insert: {
+          benchmark_id: string
+          created_at?: string
+          id?: string
+          label: string
+          metric: string
+          operator: string
+          required?: boolean
+          source_type?: string | null
+          target_value: number
+        }
+        Update: {
+          benchmark_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          metric?: string
+          operator?: string
+          required?: boolean
+          source_type?: string | null
+          target_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmark_requirements_benchmark_id_fkey"
+            columns: ["benchmark_id"]
+            isOneToOne: false
+            referencedRelation: "benchmarks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benchmark_results: {
+        Row: {
+          actual_value: number | null
+          created_at: string
+          evaluable: boolean
+          expected_value: number
+          id: string
+          message: string | null
+          passed: boolean
+          requirement_id: string
+          submission_id: string
+        }
+        Insert: {
+          actual_value?: number | null
+          created_at?: string
+          evaluable?: boolean
+          expected_value: number
+          id?: string
+          message?: string | null
+          passed?: boolean
+          requirement_id: string
+          submission_id: string
+        }
+        Update: {
+          actual_value?: number | null
+          created_at?: string
+          evaluable?: boolean
+          expected_value?: number
+          id?: string
+          message?: string | null
+          passed?: boolean
+          requirement_id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmark_results_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "benchmark_requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benchmark_results_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "benchmark_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benchmark_submissions: {
+        Row: {
+          benchmark_id: string
+          id: string
+          image_url: string | null
+          ocr_confidence: number | null
+          player_id: string
+          raw_text: string | null
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          benchmark_id: string
+          id?: string
+          image_url?: string | null
+          ocr_confidence?: number | null
+          player_id: string
+          raw_text?: string | null
+          status?: string
+          submitted_at?: string
+        }
+        Update: {
+          benchmark_id?: string
+          id?: string
+          image_url?: string | null
+          ocr_confidence?: number | null
+          player_id?: string
+          raw_text?: string | null
+          status?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmark_submissions_benchmark_id_fkey"
+            columns: ["benchmark_id"]
+            isOneToOne: false
+            referencedRelation: "benchmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benchmark_submissions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benchmarks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          role: string
+          source_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          role?: string
+          source_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          role?: string
+          source_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       map_paths: {
         Row: {
           color: string
@@ -307,6 +483,7 @@ export type Database = {
           role: string
           status: string
           uid: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -317,6 +494,7 @@ export type Database = {
           role: string
           status?: string
           uid?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -327,6 +505,7 @@ export type Database = {
           role?: string
           status?: string
           uid?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -496,6 +675,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_player_account: {
+        Args: { p_player_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          ign: string
+          join_date: string
+          photo_url: string | null
+          role: string
+          status: string
+          uid: string | null
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "players"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       claim_player_role: { Args: { _token: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -522,12 +721,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -551,11 +750,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -576,11 +775,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -601,11 +800,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -618,11 +817,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
