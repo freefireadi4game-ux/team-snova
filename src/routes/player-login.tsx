@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, LogOut, UserRound } from "lucide-react";
 import { Layout } from "@/components/Layout";
@@ -41,62 +41,108 @@ function PlayerLoginPage() {
   const { session, loading } = useSession();
   const navigate = useNavigate();
   const qc = useQueryClient();
+
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
 
-  const players = useQuery({ queryKey: ["players"], queryFn: listPlayers });
+  const players = useQuery({
+    queryKey: ["players"],
+    queryFn: listPlayers,
+  });
 
   const linked = useQuery({
     queryKey: ["authenticated-player", session?.user.id ?? null],
     queryFn: getAuthenticatedPlayer,
     enabled: !!session,
+    staleTime: 0,
   });
 
-  // Available = active roster players that no account owns yet.
-  const available = (players.data ?? []).filter(
-    (p) => p.status === "active" && !p.user_id,
+  const available = useMemo(
+    () =>
+      (players.data ?? []).filter(
+        (p) => p.status === "active" && !p.user_id,
+      ),
+    [players.data],
   );
 
-  // After Google returns, finish the claim for the player picked before sign-in.
+  // After Google returns:
+  // 1) returning player -> restore linked roster player automatically
+  // 2) first-time player -> finish the selected player claim
   useEffect(() => {
     if (!session || linked.isLoading) return;
+
+    const pending = window.localStorage.getItem(PENDING_KEY);
+
+    // Returning player:
+    // the Google account already has players.user_id linked to it.
     if (linked.data) {
       window.localStorage.removeItem(PENDING_KEY);
+      setSelected(null);
+      setSigningIn(false);
       return;
     }
-    const pending = window.localStorage.getItem(PENDING_KEY);
-    if (!pending) return;
+
+    // No linked player and no pending selection:
+    // this can happen when a user signs into Google before selecting a player.
+    if (!pending) {
+      setSigningIn(false);
+      return;
+    }
 
     window.localStorage.removeItem(PENDING_KEY);
     setBusy(true);
-    claimPlayerAccount(pending)
+
+    void claimPlayerAccount(pending)
       .then(async (player) => {
         toast.success(`Linked to ${player.ign}`);
         await qc.invalidateQueries();
       })
-      .catch((error: any) =>
-        toast.error(error?.message ?? "Could not link this player"),
-      )
+      .catch((error: any) => {
+        toast.error(error?.message ?? "Could not link this player");
+      })
       .finally(() => setBusy(false));
   }, [session, linked.isLoading, linked.data, qc]);
 
-  const connect = async () => {
+  // First-time flow:
+  // Select roster player -> Continue with Google -> claim selected player.
+  const connectSelectedPlayer = async () => {
     if (!selected) {
       toast.error("Select your player name first.");
       return;
     }
 
-    setBusy(true);
-    try {
-      window.localStorage.setItem(PENDING_KEY, selected);
-
-      if (session) {
-        const player = await claimPlayerAccount(selected);
-        toast.success(`Linked to ${player.ign}`);
-        window.localStorage.removeItem(PENDING_KEY);
-        await qc.invalidateQueries();
+    if (session) {
+      if (linked.data) {
+        toast.error(
+          `This Google account is already linked to ${linked.data.ign}. Sign out first to use a different account.`,
+        );
         return;
       }
+
+      setBusy(true);
+
+      try {
+        const player = await claimPlayerAccount(selected);
+
+        toast.success(`Linked to ${player.ign}`);
+        setSelected(null);
+
+        await qc.invalidateQueries();
+      } catch (error: any) {
+        toast.error(error?.message ?? "Could not link this player");
+      } finally {
+        setBusy(false);
+      }
+
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      // Remember the player chosen before Google OAuth.
+      window.localStorage.setItem(PENDING_KEY, selected);
 
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin + "/player-login",
@@ -105,9 +151,7 @@ function PlayerLoginPage() {
       if (result.error) {
         window.localStorage.removeItem(PENDING_KEY);
         toast.error(result.error.message ?? "Google sign-in failed");
-        return;
       }
-      if (result.redirected) return;
     } catch (error: any) {
       window.localStorage.removeItem(PENDING_KEY);
       toast.error(error?.message ?? "Could not sign in");
@@ -116,8 +160,49 @@ function PlayerLoginPage() {
     }
   };
 
+  // Returning-player flow:
+  // Google account itself identifies the roster player.
+  // No player selection is required.
+  const signInWithGoogle = async () => {
+    if (session) {
+      if (linked.data) {
+        toast.success(`Signed in as ${linked.data.ign}`);
+        return;
+      }
+
+      toast.error(
+        "This Google account is not linked to a roster player yet.",
+      );
+      return;
+    }
+
+    setSigningIn(true);
+
+    try {
+      // Very important: returning login must NOT have a pending player claim.
+      window.localStorage.removeItem(PENDING_KEY);
+
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/player-login",
+      });
+
+      if (result.error) {
+        toast.error(result.error.message ?? "Google sign-in failed");
+        setSigningIn(false);
+      }
+    } catch (error: any) {
+      toast.error(error?.message ?? "Could not sign in");
+      setSigningIn(false);
+    }
+  };
+
   const signOut = async () => {
+    window.localStorage.removeItem(PENDING_KEY);
+    setSelected(null);
+    setSigningIn(false);
+
     await supabase.auth.signOut();
+
     await qc.invalidateQueries();
   };
 
@@ -130,12 +215,15 @@ function PlayerLoginPage() {
           <div className="text-[10px] uppercase tracking-[0.25em] text-neon">
             Player Access
           </div>
+
           <h1 className="mt-2 font-display text-4xl md:text-5xl gradient-text">
             Player Sign In
           </h1>
+
           <p className="mt-2 text-sm text-muted-foreground">
-            Pick your in-game name, sign in with Google, and your match history
-            and benchmark tasks stay tied to that account.
+            First time? Select your in-game name and connect it to Google.
+            Already linked? Just sign in with the same Google account and your
+            player profile will open automatically.
           </p>
         </section>
 
@@ -147,11 +235,13 @@ function PlayerLoginPage() {
                 name={myPlayer.ign}
                 size={56}
               />
+
               <div className="min-w-0">
                 <div className="flex items-center gap-2 text-lg font-bold">
                   {myPlayer.ign}
                   <CheckCircle2 className="h-4 w-4 text-neon" />
                 </div>
+
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   {myPlayer.role}
                 </div>
@@ -165,7 +255,11 @@ function PlayerLoginPage() {
               >
                 Go to my tasks
               </Button>
-              <Button variant="outline" onClick={() => void signOut()}>
+
+              <Button
+                variant="outline"
+                onClick={() => void signOut()}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
               </Button>
@@ -173,17 +267,44 @@ function PlayerLoginPage() {
           </section>
         ) : (
           <section className="glass rounded-2xl p-5 md:p-6">
-            <div className="label-eyebrow mb-3">Select your player</div>
+            <div className="label-eyebrow mb-3">
+              Returning player
+            </div>
+
+            <Button
+              className="glow w-full"
+              disabled={loading || busy || signingIn}
+              onClick={() => void signInWithGoogle()}
+            >
+              <UserRound className="mr-2 h-4 w-4" />
+              {signingIn
+                ? "Opening Google…"
+                : "Sign in with Google"}
+            </Button>
+
+            <div className="my-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              <span>First time player?</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <div className="label-eyebrow mb-3">
+              Select your player
+            </div>
 
             {players.isLoading || loading ? (
               <div className="grid gap-2">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 rounded-xl" />
+                  <Skeleton
+                    key={i}
+                    className="h-16 rounded-xl"
+                  />
                 ))}
               </div>
             ) : available.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                Every active roster player is already linked to an account.
+                All active roster players are already linked.
+                Use the Google sign-in button above.
               </div>
             ) : (
               <div className="grid gap-2">
@@ -203,12 +324,17 @@ function PlayerLoginPage() {
                       name={p.ign}
                       size={40}
                     />
+
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-semibold">{p.ign}</div>
+                      <div className="truncate font-semibold">
+                        {p.ign}
+                      </div>
+
                       <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                         {p.role}
                       </div>
                     </div>
+
                     {selected === p.id && (
                       <CheckCircle2 className="h-4 w-4 text-neon" />
                     )}
@@ -219,26 +345,19 @@ function PlayerLoginPage() {
 
             <Button
               className="glow mt-5 w-full"
-              disabled={busy || !selected}
-              onClick={() => void connect()}
+              disabled={
+                busy ||
+                signingIn ||
+                loading ||
+                !selected
+              }
+              onClick={() => void connectSelectedPlayer()}
             >
               <UserRound className="mr-2 h-4 w-4" />
               {busy
                 ? "Connecting…"
-                : session
-                  ? "Link this player to my account"
-                  : "Continue with Google"}
+                : "Continue with Google"}
             </Button>
-
-            {session && (
-              <button
-                type="button"
-                onClick={() => void signOut()}
-                className="mt-3 w-full text-center text-xs text-muted-foreground hover:text-neon"
-              >
-                Use a different Google account
-              </button>
-            )}
           </section>
         )}
       </div>
