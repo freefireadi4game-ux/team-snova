@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as PlayerLoginRouteImport } from './routes/player-login'
 import { Route as CompareRouteImport } from './routes/compare'
+import { Route as BenchmarksRouteImport } from './routes/benchmarks'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AchievementsRouteImport } from './routes/achievements'
@@ -50,6 +51,11 @@ const PlayerLoginRoute = PlayerLoginRouteImport.update({
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BenchmarksRoute = BenchmarksRouteImport.update({
+  id: '/benchmarks',
+  path: '/benchmarks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -184,11 +190,11 @@ export interface FileRoutesByFullPath {
   '/achievements': typeof AchievementsRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
+  '/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
   '/compare': typeof CompareRoute
   '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
-  '/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
   '/join/$token': typeof JoinTokenRoute
   '/maps/$id': typeof MapsIdRoute
   '/players/$id': typeof PlayersIdRoute
@@ -212,10 +218,10 @@ export interface FileRoutesByTo {
   '/achievements': typeof AchievementsRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
+  '/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
   '/compare': typeof CompareRoute
   '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
-  '/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
   '/join/$token': typeof JoinTokenRoute
   '/maps/$id': typeof MapsIdRoute
   '/players/$id': typeof PlayersIdRoute
@@ -241,6 +247,7 @@ export interface FileRoutesById {
   '/achievements': typeof AchievementsRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
+  '/benchmarks': typeof BenchmarksRoute
   '/compare': typeof CompareRoute
   '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
@@ -271,11 +278,11 @@ export interface FileRouteTypes {
     | '/achievements'
     | '/analytics'
     | '/auth'
+    | '/benchmarks'
     | '/compare'
     | '/player-login'
     | '/stats'
     | '/admin'
-    | '/benchmarks'
     | '/join/$token'
     | '/maps/$id'
     | '/players/$id'
@@ -299,10 +306,10 @@ export interface FileRouteTypes {
     | '/achievements'
     | '/analytics'
     | '/auth'
+    | '/benchmarks'
     | '/compare'
     | '/player-login'
     | '/stats'
-    | '/benchmarks'
     | '/join/$token'
     | '/maps/$id'
     | '/players/$id'
@@ -327,6 +334,7 @@ export interface FileRouteTypes {
     | '/achievements'
     | '/analytics'
     | '/auth'
+    | '/benchmarks'
     | '/compare'
     | '/player-login'
     | '/stats'
@@ -357,6 +365,7 @@ export interface RootRouteChildren {
   AchievementsRoute: typeof AchievementsRoute
   AnalyticsRoute: typeof AnalyticsRoute
   AuthRoute: typeof AuthRoute
+  BenchmarksRoute: typeof BenchmarksRoute
   CompareRoute: typeof CompareRoute
   PlayerLoginRoute: typeof PlayerLoginRoute
   StatsRoute: typeof StatsRoute
@@ -390,6 +399,13 @@ declare module '@tanstack/react-router' {
       path: '/compare'
       fullPath: '/compare'
       preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/benchmarks': {
+      id: '/benchmarks'
+      path: '/benchmarks'
+      fullPath: '/benchmarks'
+      preLoaderRoute: typeof BenchmarksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -637,6 +653,7 @@ const rootRouteChildren: RootRouteChildren = {
   AchievementsRoute: AchievementsRoute,
   AnalyticsRoute: AnalyticsRoute,
   AuthRoute: AuthRoute,
+  BenchmarksRoute: BenchmarksRoute,
   CompareRoute: CompareRoute,
   PlayerLoginRoute: PlayerLoginRoute,
   StatsRoute: StatsRoute,
