@@ -240,61 +240,185 @@ function parseTraining(
    */
   let kills: number | null = null;
 
-  const eliminationLabel = words.find((word) =>
-    /^eliminations?$/i.test(word.text),
-  );
+/*
+ * TRAINING ELIMINATIONS EXTRACTION
+ *
+ * The supplied Free Fire screenshots have a distinctive layout:
+ *
+ *        168
+ *     ELIMINATIONS
+ *
+ * The number is large and sits inside the left scoreboard panel.
+ *
+ * OCR can sometimes fail to recognize the word "ELIMINATIONS"
+ * correctly, so we use several fallbacks:
+ *
+ * 1. Exact ELIMINATIONS label + number above it
+ * 2. OCR variants of ELIMINATIONS
+ * 3. Large numeric value in the left portion of the scoreboard
+ * 4. Text fallback
+ */
 
-  if (eliminationLabel) {
+const eliminationLabels = words.filter((word) => {
+  const value = normalize(word.text)
+    .replace(/0/g, "o")
+    .replace(/1/g, "l")
+    .replace(/5/g, "s");
+
+  return (
+    value === "eliminations" ||
+    value.includes("elimination")
+  );
+});
+
+if (eliminationLabels.length) {
+  for (const label of eliminationLabels) {
     const candidates = numericWords
       .filter((candidate) => {
-        const dx =
-          candidate.left - eliminationLabel.left;
+        const dx = candidate.left - label.left;
+        const dy = candidate.top - label.top;
 
-        const dy =
-          candidate.top - eliminationLabel.top;
-
+        /*
+         * Number must be above the label and reasonably close.
+         */
         return (
-          Math.abs(dx) <= 350 &&
-          dy < 50 &&
-          dy > -500 &&
-          candidate.value! >= 20
+          dy < 80 &&
+          dy > -650 &&
+          Math.abs(dx) <= 450 &&
+          candidate.value! >= 20 &&
+          candidate.value! <= 9999
         );
       })
       .sort((a, b) => {
         const scoreA =
           Math.abs(
-            a.top - eliminationLabel.top,
-          ) * 5 +
+            a.top - label.top,
+          ) * 4 +
           Math.abs(
-            a.left - eliminationLabel.left,
+            a.left - label.left,
           );
 
         const scoreB =
           Math.abs(
-            b.top - eliminationLabel.top,
-          ) * 5 +
+            b.top - label.top,
+          ) * 4 +
           Math.abs(
-            b.left - eliminationLabel.left,
+            b.left - label.left,
           );
 
         return scoreA - scoreB;
       });
 
-    kills = candidates[0]?.value ?? null;
+    if (candidates.length) {
+      kills = candidates[0].value!;
+      break;
+    }
   }
+}
 
-  /*
-   * Text fallback.
-   *
-   * Require at least two digits so numbers like 1, 8 or 12
-   * from unrelated HUD elements are not chosen as kills.
-   */
-  if (kills === null) {
-    kills = findMetric(text, [
-      /\beliminations?\s*[:\-]?\s*([0-9]{2,4})\b/i,
-      /\bkills?\s*[:\-]?\s*([0-9]{2,4})\b/i,
-    ]);
-  }
+/*
+ * IMPORTANT FALLBACK:
+ *
+ * The scoreboard's elimination number is much larger than
+ * the other training values in the right panel.
+ *
+ * We therefore look for the largest sensible number in the
+ * LEFT side of the OCR image.
+ *
+ * This catches:
+ *   168
+ *   127
+ *
+ * while avoiding:
+ *   15
+ *   12
+ *   1.42
+ *   8.93
+ *   118
+ */
+if (kills === null) {
+  const leftSideCandidates = numericWords
+    .filter((candidate) => {
+      const x = candidate.left;
+      const y = candidate.top;
+
+      /*
+       * Ignore tiny numbers.
+       */
+      if (candidate.value! < 20) {
+        return false;
+      }
+
+      /*
+       * Training scoreboard is normally centered.
+       * The large elimination number is located toward
+       * the LEFT portion of the scoreboard.
+       *
+       * Using a relative width check keeps this usable
+       * on different screenshot resolutions.
+       */
+      const imageWidth =
+        Number(ocr.width) ||
+        Math.max(
+          ...words.map(
+            (word) =>
+              word.left + word.width,
+          ),
+          0,
+        );
+
+      if (imageWidth > 0 && x > imageWidth * 0.62) {
+        return false;
+      }
+
+      /*
+       * Avoid extreme top HUD / bottom UI numbers.
+       */
+      if (
+        ocr.height > 0 &&
+        (y < ocr.height * 0.15 ||
+          y > ocr.height * 0.85)
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      /*
+       * Prefer:
+       * - larger values
+       * - larger OCR boxes
+       */
+      const sizeA =
+        Math.max(a.width, 1) *
+        Math.max(a.height, 1);
+
+      const sizeB =
+        Math.max(b.width, 1) *
+        Math.max(b.height, 1);
+
+      return (
+        b.value! * 10 +
+        sizeB -
+        (a.value! * 10 + sizeA)
+      );
+    });
+
+  kills =
+    leftSideCandidates[0]?.value ??
+    null;
+}
+
+/*
+ * Final conservative textual fallback.
+ */
+if (kills === null) {
+  kills = findMetric(text, [
+    /\beliminations?\s*[:\-]?\s*([0-9]{2,4})\b/i,
+    /\bkills?\s*[:\-]?\s*([0-9]{2,4})\b/i,
+  ]);
+}
 
   const headshots =
     findMetric(text, [
