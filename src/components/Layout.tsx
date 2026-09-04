@@ -1,942 +1,358 @@
-import { didPlay, listPlayers, type Player } from "@/lib/data";
-import { listStatEntries, type StatEntry } from "@/lib/stats-core";
+import { Link, useRouter } from "@tanstack/react-router";
+import {
+  Menu,
+  Trophy,
+  Users,
+  Home,
+  Shield,
+  LogOut,
+  GitCompareArrows,
+  BarChart3,
+  Map as MapIcon,
+  Medal,
+  UserRound,
+  Award,
+} from "lucide-react";
+import { useState, type ReactNode } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import {
+  useSession,
+  useIsAdmin,
+} from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import snovaLogo from "@/assets/snova-logo.jpg.asset.json";
+import { PageTransition } from "@/components/PageTransition";
 
-/**
- * MERIT INDEX
- *
- * FIXED WEIGHTAGE:
- *   45% Tasks
- *   40% Individual Performance
- *   15% Consistency
- *
- * IMPORTANT:
- * - Placement is TEAM performance and is NOT used for individual Merit.
- * - Match count does NOT directly award Merit.
- * - Performance is based only on individual statistics.
- * - When OCR/task data becomes available, it automatically fills the 45%
- *   task component without changing the overall formula.
- */
+const NAV = [
+  {
+    to: "/",
+    label: "Home",
+    icon: Home,
+  },
+  {
+    to: "/players",
+    label: "Roster",
+    icon: Users,
+  },
+  {
+    to: "/tournaments",
+    label: "Tournaments",
+    icon: Trophy,
+  },
+  {
+    to: "/analytics",
+    label: "Analytics",
+    icon: BarChart3,
+  },
+  {
+    to: "/merit",
+    label: "Merit Index",
+    icon: Award,
+  },
+  {
+    to: "/achievements",
+    label: "Achievements",
+    icon: Medal,
+  },
+  {
+    to: "/compare",
+    label: "Compare",
+    icon: GitCompareArrows,
+  },
+  {
+    to: "/maps",
+    label: "Maps",
+    icon: MapIcon,
+  },
+];
 
-export type MeritTaskStatsRow = {
-  player_id: string;
-  assigned: number;
-  completed: number;
-  attempted_not_passed: number;
-  pass_submissions: number;
-  total_submissions: number;
-};
+function NavLinks({
+  onClick,
+  stacked,
+}: {
+  onClick?: () => void;
+  stacked?: boolean;
+}) {
+  const {
+    data: isAdmin,
+  } = useIsAdmin();
 
-export type MeritRow = {
-  player: Player;
-  rank: number;
-  merit: number;
-
-  task_score: number;
-  performance_score: number;
-  consistency: number;
-  penalty: number;
-
-  assigned: number;
-  completed: number;
-  attempted_not_passed: number;
-  missed: number;
-  extra_passes: number;
-
-  matches_played: number;
-
-  avg_kills: number;
-  avg_damage: number;
-  avg_assists: number;
-
-  /**
-   * Current database does not store deaths separately.
-   * Therefore this is the available K/D-style value:
-   * kills per played match.
-   */
-  avg_kd: number;
-
-  /**
-   * Kept for UI compatibility only.
-   * NEVER used in Merit calculation.
-   */
-  avg_placement_points: number;
-
-  /**
-   * 0-1 reliability of the competitive sample.
-   * It does not itself add points.
-   */
-  sample_weight: number;
-};
-
-/* -------------------------------------------------------------------------- */
-/* WEIGHTS                                                                    */
-/* -------------------------------------------------------------------------- */
-
-const W_TASK = 0.45;
-const W_PERFORMANCE = 0.4;
-const W_CONSISTENCY = 0.15;
-
-const MAX_MISS_PENALTY = 12;
-const MAX_EXTRA_BONUS = 8;
-const PARTIAL_CREDIT = 0.4;
-
-/**
- * Sample-size smoothing.
- *
- * More matches do NOT automatically increase Merit.
- * This only reduces the influence of tiny samples.
- */
-const SAMPLE_K = 8;
-
-/* -------------------------------------------------------------------------- */
-/* ROLE WEIGHTS                                                               */
-/* -------------------------------------------------------------------------- */
-
-type RoleWeights = {
-  kills: number;
-  damage: number;
-  assists: number;
-  kd: number;
-};
-
-/**
- * Role-aware weighting is applied only to INDIVIDUAL metrics.
- *
- * Placement is intentionally absent.
- */
-function roleWeights(role: string): RoleWeights {
-  switch (role.trim().toLowerCase()) {
-    case "igl":
-      return {
-        kills: 0.2,
-        damage: 0.2,
-        assists: 0.25,
-        kd: 0.35,
-      };
-
-    case "rusher":
-    case "fragger":
-      return {
-        kills: 0.4,
-        damage: 0.25,
-        assists: 0.1,
-        kd: 0.25,
-      };
-
-    case "sniper":
-      return {
-        kills: 0.3,
-        damage: 0.35,
-        assists: 0.1,
-        kd: 0.25,
-      };
-
-    case "support":
-      return {
-        kills: 0.15,
-        damage: 0.25,
-        assists: 0.35,
-        kd: 0.25,
-      };
-
-    case "flex":
-      return {
-        kills: 0.3,
-        damage: 0.25,
-        assists: 0.2,
-        kd: 0.25,
-      };
-
-    default:
-      return {
-        kills: 0.3,
-        damage: 0.25,
-        assists: 0.2,
-        kd: 0.25,
-      };
-  }
-}
-
-/* -------------------------------------------------------------------------- */
-/* HELPERS                                                                    */
-/* -------------------------------------------------------------------------- */
-
-function clamp(
-  value: number,
-  min = 0,
-  max = 100,
-): number {
-  return Math.min(
-    max,
-    Math.max(min, value),
-  );
-}
-
-function mean(values: number[]): number {
-  if (!values.length) return 0;
+  const {
+    session,
+  } = useSession();
 
   return (
-    values.reduce(
-      (sum, value) => sum + value,
-      0,
-    ) / values.length
-  );
-}
-
-/**
- * Normalizes a metric across players.
- *
- * Lowest  -> 0
- * Highest -> 100
- * Same    -> 50
- */
-function normalizer(
-  values: number[],
-) {
-  const finite = values.filter(
-    Number.isFinite,
-  );
-
-  if (!finite.length) {
-    return () => 0;
-  }
-
-  const min = Math.min(...finite);
-  const max = Math.max(...finite);
-
-  return (value: number) => {
-    if (!Number.isFinite(value)) {
-      return 0;
-    }
-
-    if (max - min < 1e-9) {
-      return 50;
-    }
-
-    return (
-      ((value - min) /
-        (max - min)) *
-      100
-    );
-  };
-}
-
-/* -------------------------------------------------------------------------- */
-/* TASK DATA                                                                  */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Task/OCR data is optional.
- *
- * Until the RPC exists/returns data:
- * - task score stays neutral at 50
- * - no player is falsely rewarded or punished
- *
- * Once OCR/task data starts returning rows, the same 45% bucket
- * automatically starts using it.
- */
-export async function listMeritTaskStats(): Promise<
-  MeritTaskStatsRow[]
-> {
-  try {
-    const { supabase } = await import(
-      "@/integrations/supabase/client"
-    );
-
-    const {
-      data,
-      error,
-    } = await supabase.rpc(
-      "merit_task_stats",
-    );
-
-    if (error) {
-      console.warn(
-        "[Merit] Task stats unavailable:",
-        error.message,
-      );
-
-      return [];
-    }
-
-    return (
-      data ?? []
-    ) as MeritTaskStatsRow[];
-  } catch (error) {
-    console.warn(
-      "[Merit] Task stats unavailable:",
-      error,
-    );
-
-    return [];
-  }
-}
-
-/* -------------------------------------------------------------------------- */
-/* SOURCE                                                                     */
-/* -------------------------------------------------------------------------- */
-
-export type MeritSource = {
-  players: Player[];
-  taskStats: MeritTaskStatsRow[];
-  entries: StatEntry[];
-};
-
-export async function loadMeritSource(): Promise<
-  MeritSource
-> {
-  const [
-    players,
-    taskStats,
-    entries,
-  ] = await Promise.all([
-    listPlayers(),
-    listMeritTaskStats(),
-    listStatEntries(),
-  ]);
-
-  return {
-    players:
-      players as Player[],
-    taskStats,
-    entries,
-  };
-}
-
-/* -------------------------------------------------------------------------- */
-/* AGGREGATION                                                                */
-/* -------------------------------------------------------------------------- */
-
-type PlayerAggregate = {
-  matches: number;
-  kills: number;
-  damage: number;
-  assists: number;
-
-  /**
-   * Individual match performance used for consistency.
-   * Placement is NEVER included.
-   */
-  matchPerformance: number[];
-};
-
-function aggregatePlayers(
-  entries: StatEntry[],
-  players: Player[],
-): Map<string, PlayerAggregate> {
-  const map = new Map<
-    string,
-    PlayerAggregate
-  >();
-
-  for (const player of players) {
-    map.set(player.id, {
-      matches: 0,
-      kills: 0,
-      damage: 0,
-      assists: 0,
-      matchPerformance: [],
-    });
-  }
-
-  for (const entry of entries) {
-    const agg = map.get(
-      entry.player_id,
-    );
-
-    if (!agg) continue;
-
-    /**
-     * Same played-match rule already used elsewhere:
-     * a player counts for the match if any individual stat > 0.
-     */
-    if (!didPlay(entry)) {
-      continue;
-    }
-
-    agg.matches += 1;
-    agg.kills += entry.kills;
-    agg.damage += entry.damage;
-    agg.assists += entry.assists;
-
-    /**
-     * Individual-only consistency number.
-     *
-     * Damage is scaled only so it can be combined with kills/assists.
-     * This is NOT the final Merit score.
-     *
-     * NO placement.
-     */
-    agg.matchPerformance.push(
-      entry.kills +
-        entry.assists +
-        entry.damage / 1000,
-    );
-  }
-
-  return map;
-}
-
-/* -------------------------------------------------------------------------- */
-/* MAIN CALCULATION                                                           */
-/* -------------------------------------------------------------------------- */
-
-export function computeMeritIndex(
-  source: MeritSource,
-): MeritRow[] {
-  const players = source.players
-    .filter(
-      (player) =>
-        player.status === "active",
-    )
-    .slice()
-    .sort((a, b) =>
-      a.id.localeCompare(b.id),
-    );
-
-  const aggs = aggregatePlayers(
-    source.entries,
-    players,
-  );
-
-  const taskMap = new Map(
-    source.taskStats.map(
-      (row) => [
-        row.player_id,
-        row,
-      ],
-    ),
-  );
-
-  const playersWithMatches =
-    players.filter(
-      (player) =>
-        (aggs.get(
-          player.id,
-        )?.matches ?? 0) > 0,
-    );
-
-  /* ---------------------------------------------------------------------- */
-  /* AVERAGES                                                               */
-  /* ---------------------------------------------------------------------- */
-
-  const averageStat = (
-    player: Player,
-    stat:
-      | "kills"
-      | "damage"
-      | "assists",
-  ) => {
-    const agg =
-      aggs.get(player.id)!;
-
-    if (!agg.matches) {
-      return 0;
-    }
-
-    return (
-      agg[stat] /
-      agg.matches
-    );
-  };
-
-  /**
-   * Current DB has no separate deaths field.
-   *
-   * So the currently available K/D-style metric is:
-   *
-   *     kills / played matches
-   *
-   * As soon as a deaths field exists, this function can become
-   * actual kills/deaths without touching the rest of the formula.
-   */
-  const averageKd = (
-    player: Player,
-  ) => {
-    return averageStat(
-      player,
-      "kills",
-    );
-  };
-
-  /* ---------------------------------------------------------------------- */
-  /* NORMALIZATION                                                          */
-  /* ---------------------------------------------------------------------- */
-
-  const normalizeKills =
-    normalizer(
-      playersWithMatches.map(
-        (player) =>
-          averageStat(
-            player,
-            "kills",
-          ),
-      ),
-    );
-
-  const normalizeDamage =
-    normalizer(
-      playersWithMatches.map(
-        (player) =>
-          averageStat(
-            player,
-            "damage",
-          ),
-      ),
-    );
-
-  const normalizeAssists =
-    normalizer(
-      playersWithMatches.map(
-        (player) =>
-          averageStat(
-            player,
-            "assists",
-          ),
-      ),
-    );
-
-  const normalizeKd =
-    normalizer(
-      playersWithMatches.map(
-        averageKd,
-      ),
-    );
-
-  /* ---------------------------------------------------------------------- */
-  /* RAW INDIVIDUAL PERFORMANCE                                             */
-  /* ---------------------------------------------------------------------- */
-
-  const rawPerformance =
-    new Map<string, number>();
-
-  for (const player of players) {
-    const agg =
-      aggs.get(player.id)!;
-
-    if (!agg.matches) {
-      rawPerformance.set(
-        player.id,
-        0,
-      );
-
-      continue;
-    }
-
-    const weights =
-      roleWeights(
-        player.role,
-      );
-
-    const score =
-      normalizeKills(
-        averageStat(
-          player,
-          "kills",
-        ),
-      ) *
-        weights.kills +
-      normalizeDamage(
-        averageStat(
-          player,
-          "damage",
-        ),
-      ) *
-        weights.damage +
-      normalizeAssists(
-        averageStat(
-          player,
-          "assists",
-        ),
-      ) *
-        weights.assists +
-      normalizeKd(
-        averageKd(player),
-      ) *
-        weights.kd;
-
-    rawPerformance.set(
-      player.id,
-      clamp(score),
-    );
-  }
-
-  const performanceMean =
-    mean(
-      playersWithMatches.map(
-        (player) =>
-          rawPerformance.get(
-            player.id,
-          ) ?? 0,
-      ),
-    );
-
-  /* ---------------------------------------------------------------------- */
-  /* FINAL ROWS                                                             */
-  /* ---------------------------------------------------------------------- */
-
-  const rows: MeritRow[] =
-    players.map((player) => {
-      const agg =
-        aggs.get(player.id)!;
-
-      const task =
-        taskMap.get(player.id);
-
-      /* ---------------------------- TASKS ----------------------------- */
-
-      const assigned =
-        task?.assigned ?? 0;
-
-      const completed =
-        Math.min(
-          task?.completed ?? 0,
-          assigned,
-        );
-
-      const attemptedNotPassed =
-        task?.attempted_not_passed ??
-        0;
-
-      const missed =
-        Math.max(
-          0,
-          assigned -
-            completed -
-            attemptedNotPassed,
-        );
-
-      const passSubmissions =
-        task?.pass_submissions ??
-        0;
-
-      const totalSubmissions =
-        task?.total_submissions ??
-        0;
-
-      const extraPasses =
-        Math.max(
-          0,
-          passSubmissions -
-            completed,
-        );
-
-      /**
-       * Until real task/OCR data exists,
-       * this remains neutral.
-       */
-      let taskScore = 50;
-
-      if (assigned > 0) {
-        const coverage =
-          (
-            completed +
-            attemptedNotPassed *
-              PARTIAL_CREDIT
-          ) /
-          assigned;
-
-        const extraBonus =
-          Math.min(
-            1,
-            extraPasses /
-              assigned,
-          ) *
-          MAX_EXTRA_BONUS;
-
-        taskScore =
-          clamp(
-            coverage * 100 +
-              extraBonus,
-          );
+    <nav
+      className={
+        stacked
+          ? "flex flex-col gap-1"
+          : "flex items-center gap-0.5"
       }
+    >
+      {NAV.map((n) => (
+        <Link
+          key={n.to}
+          to={n.to}
+          onClick={onClick}
+          className="i-ripple i-slide-icon flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors"
+          activeProps={{
+            className:
+              "!text-foreground !bg-white/[0.08]",
+          }}
+          activeOptions={{
+            exact: n.to === "/",
+          }}
+        >
+          <n.icon className="h-4 w-4" />
+          {n.label}
+        </Link>
+      ))}
 
-      /* ----------------------- PERFORMANCE ---------------------------- */
+      {isAdmin && (
+        <Link
+          to="/admin"
+          onClick={onClick}
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-neon hover:bg-neon-soft transition-colors"
+          activeProps={{
+            className: "!bg-neon-soft",
+          }}
+        >
+          <Shield className="h-4 w-4" />
+          Admin
+        </Link>
+      )}
 
-      /**
-       * Match count ONLY affects reliability.
-       * It does not add points directly.
-       */
-      const sampleWeight =
-        agg.matches > 0
-          ? agg.matches /
-            (agg.matches +
-              SAMPLE_K)
-          : 0;
+      {!session && (
+        <>
+          <Link
+            to="/auth"
+            onClick={onClick}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Shield className="h-4 w-4" />
+            Sign in
+          </Link>
 
-      const performance =
-        agg.matches > 0
-          ? clamp(
-              (
-                rawPerformance.get(
-                  player.id,
-                ) ?? 0
-              ) *
-                sampleWeight +
-                performanceMean *
-                  (1 -
-                    sampleWeight),
-            )
-          : 0;
+          <Link
+            to="/player-login"
+            onClick={onClick}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-neon hover:bg-neon-soft transition-colors"
+          >
+            <UserRound className="h-4 w-4" />
+            Login as Player
+          </Link>
+        </>
+      )}
 
-      /* ------------------------ CONSISTENCY ---------------------------- */
-
-      /**
-       * Task reliability is neutral until task/OCR data exists.
-       */
-      const taskReliability =
-        totalSubmissions > 0
-          ? passSubmissions /
-            totalSubmissions
-          : 0.5;
-
-      /**
-       * Individual match consistency.
-       *
-       * NO PLACEMENT.
-       */
-      let matchConsistency = 0.5;
-
-      if (
-        agg.matchPerformance
-          .length >= 2
-      ) {
-        const avg =
-          mean(
-            agg.matchPerformance,
-          );
-
-        const variance =
-          mean(
-            agg.matchPerformance.map(
-              (value) =>
-                (
-                  value - avg
-                ) ** 2,
-            ),
-          );
-
-        const standardDeviation =
-          Math.sqrt(
-            variance,
-          );
-
-        const coefficient =
-          avg > 0
-            ? standardDeviation /
-              avg
-            : 1;
-
-        matchConsistency =
-          clamp(
-            1 -
-              Math.min(
-                1,
-                coefficient,
-              ),
-            0,
-            1,
-          );
-      }
-
-      const consistency =
-        clamp(
-          (
-            taskReliability *
-              0.6 +
-            matchConsistency *
-              0.4
-          ) * 100,
-        );
-
-      /* -------------------------- PENALTY ------------------------------ */
-
-      const penalty =
-        assigned > 0
-          ? (
-              missed /
-              assigned
-            ) *
-            MAX_MISS_PENALTY
-          : 0;
-
-      /* ---------------------------- MERIT ------------------------------ */
-
-      /**
-       * FINAL FORMULA:
-       *
-       * 45% Tasks
-       * 40% Individual Performance
-       * 15% Consistency
-       *
-       * Placement = ZERO.
-       */
-      const merit =
-        clamp(
-          taskScore *
-            W_TASK +
-            performance *
-              W_PERFORMANCE +
-            consistency *
-              W_CONSISTENCY -
-            penalty,
-        );
-
-      return {
-        player,
-        rank: 0,
-
-        merit:
-          Math.round(
-            merit * 10,
-          ) / 10,
-
-        task_score:
-          Math.round(
-            taskScore * 10,
-          ) / 10,
-
-        performance_score:
-          Math.round(
-            performance * 10,
-          ) / 10,
-
-        consistency:
-          Math.round(
-            consistency * 10,
-          ) / 10,
-
-        penalty:
-          Math.round(
-            penalty * 10,
-          ) / 10,
-
-        assigned,
-        completed,
-
-        attempted_not_passed:
-          attemptedNotPassed,
-
-        missed,
-        extra_passes:
-          extraPasses,
-
-        matches_played:
-          agg.matches,
-
-        avg_kills:
-          Math.round(
-            averageStat(
-              player,
-              "kills",
-            ) * 100,
-          ) / 100,
-
-        avg_damage:
-          Math.round(
-            averageStat(
-              player,
-              "damage",
-            ),
-          ),
-
-        avg_assists:
-          Math.round(
-            averageStat(
-              player,
-              "assists",
-            ) * 100,
-          ) / 100,
-
-        avg_kd:
-          Math.round(
-            averageKd(player) *
-              100,
-          ) / 100,
-
-        /**
-         * Explicitly zero.
-         * Placement is team performance and is never used.
-         */
-        avg_placement_points: 0,
-
-        sample_weight:
-          Math.round(
-            sampleWeight * 100,
-          ) / 100,
-      };
-    });
-
-  /* ---------------------------------------------------------------------- */
-  /* RANKING                                                                */
-  /* ---------------------------------------------------------------------- */
-
-  rows.sort(
-    (a, b) =>
-      b.merit - a.merit ||
-      b.performance_score -
-        a.performance_score ||
-      b.avg_kd -
-        a.avg_kd ||
-      b.avg_kills -
-        a.avg_kills ||
-      b.avg_damage -
-        a.avg_damage ||
-      a.player.ign.localeCompare(
-        b.player.ign,
-      ),
+      {session && (
+        <Link
+          to="/player-login"
+          onClick={onClick}
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-neon hover:bg-neon-soft transition-colors"
+        >
+          <UserRound className="h-4 w-4" />
+          Player Account
+        </Link>
+      )}
+    </nav>
   );
+}
 
-  rows.forEach(
-    (row, index) => {
-      row.rank =
-        index + 1;
+export function Layout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [open, setOpen] =
+    useState(false);
+
+  const {
+    session,
+  } = useSession();
+
+  const router =
+    useRouter();
+
+  const signOut =
+    async () => {
+      await supabase.auth.signOut();
+      await router.invalidate();
+    };
+
+  return (
+    <div className="min-h-screen">
+      <header className="a-down sticky top-0 z-40 border-b border-border bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3 lg:px-8">
+          <Link
+            to="/"
+            className="i-grow flex items-center gap-3"
+          >
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg ring-1 ring-white/10">
+              <img
+                src={snovaLogo.url}
+                alt="Team Snova Esp"
+                className="h-full w-full object-cover l-breathe"
+              />
+            </div>
+
+            <div className="leading-none">
+              <div className="font-display text-sm font-bold tracking-[0.16em] uppercase">
+                Snova
+              </div>
+
+              <div className="mt-1 text-[9px] uppercase tracking-[0.3em] text-muted-foreground">
+                Esports
+              </div>
+            </div>
+          </Link>
+
+          <div className="hidden lg:flex items-center gap-2">
+            <div className="rounded-xl border border-border bg-surface/60 p-1">
+              <NavLinks />
+            </div>
+
+            {session && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={signOut}
+                aria-label="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          <div className="lg:hidden">
+            <Sheet
+              open={open}
+              onOpenChange={setOpen}
+            >
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+
+              <SheetContent
+                side="right"
+                className="border-border bg-background/95 backdrop-blur-xl"
+              >
+                <div className="mt-8">
+                  <div className="label-eyebrow mb-3">
+                    Navigate
+                  </div>
+
+                  <NavLinks
+                    stacked
+                    onClick={() =>
+                      setOpen(false)
+                    }
+                  />
+
+                  {session && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        void signOut();
+                        setOpen(false);
+                      }}
+                      className="mt-4 w-full justify-start"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign out
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-[1400px] px-4 pb-28 pt-6 lg:px-8 lg:pb-16 lg:pt-10">
+        <PageTransition>
+          {children}
+        </PageTransition>
+      </main>
+
+      <footer className="a-fade d-3 border-t border-border py-10 pb-32 lg:pb-10">
+        <div className="mx-auto flex max-w-[1400px] flex-col items-center gap-2 px-4 text-center lg:flex-row lg:justify-between lg:text-left">
+          <div className="font-display text-sm font-bold uppercase tracking-[0.3em]">
+            Team Snova Esp
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            Compete. Dominate. Repeat.
+          </div>
+        </div>
+      </footer>
+
+      <BottomNav />
+    </div>
+  );
+}
+
+function BottomNav() {
+  const items = [
+    {
+      to: "/",
+      label: "Home",
+      icon: Home,
+      exact: true,
     },
+    {
+      to: "/analytics",
+      label: "Analytics",
+      icon: BarChart3,
+    },
+    {
+      to: "/merit",
+      label: "Merit",
+      icon: Award,
+    },
+    {
+      to: "/achievements",
+      label: "Awards",
+      icon: Medal,
+    },
+    {
+      to: "/compare",
+      label: "Compare",
+      icon: GitCompareArrows,
+    },
+  ];
+
+  return (
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pt-6 bg-gradient-to-t from-background via-background/90 to-transparent">
+      <nav className="a-up mx-auto flex max-w-md items-center justify-between rounded-2xl border border-border bg-surface/95 p-1.5 backdrop-blur-xl">
+        {items.map((n) => (
+          <Link
+            key={n.to}
+            to={n.to}
+            className="i-ripple flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[9px] uppercase tracking-[0.14em] text-muted-foreground transition-colors active:scale-95"
+            activeProps={{
+              className:
+                "!text-neon !bg-neon-soft",
+            }}
+            activeOptions={{
+              exact: !!n.exact,
+            }}
+          >
+            <n.icon className="h-[18px] w-[18px]" />
+            {n.label}
+          </Link>
+        ))}
+      </nav>
+    </div>
   );
-
-  return rows;
-}
-
-/* -------------------------------------------------------------------------- */
-/* TIERS                                                                      */
-/* -------------------------------------------------------------------------- */
-
-export function meritTier(
-  merit: number,
-): {
-  label: string;
-  className: string;
-} {
-  if (merit >= 80) {
-    return {
-      label: "Elite",
-      className: "text-neon",
-    };
-  }
-
-  if (merit >= 65) {
-    return {
-      label: "Excellent",
-      className: "text-neon",
-    };
-  }
-
-  if (merit >= 50) {
-    return {
-      label: "Good",
-      className: "text-foreground",
-    };
-  }
-
-  if (merit >= 35) {
-    return {
-      label: "Developing",
-      className: "text-yellow-400",
-    };
-  }
-
-  return {
-    label: "Needs Work",
-    className: "text-destructive",
-  };
 }
