@@ -57,6 +57,12 @@ function getMetricValue(
     case "assists":
       return stats.assists;
 
+    case "elimination_streak":
+      return stats.elimination_streak;
+
+    case "kd_ratio":
+      return stats.kd_ratio;
+
     case "custom":
     default:
       return null;
