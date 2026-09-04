@@ -2,19 +2,25 @@ import { didPlay, listPlayers, type Player } from "@/lib/data";
 import { listStatEntries, type StatEntry } from "@/lib/stats-core";
 
 /**
- * MERIT INDEX
+ * Merit Index
  *
  * FIXED WEIGHTAGE:
  *   45% Tasks
  *   40% Individual Performance
  *   15% Consistency
  *
- * IMPORTANT:
- * - Placement is TEAM performance and is NOT used for individual Merit.
- * - Match count does NOT directly award Merit.
- * - Performance is based only on individual statistics.
- * - When OCR/task data becomes available, it automatically fills the 45%
- *   task component without changing the overall formula.
+ * Individual Performance uses:
+ *   - Avg Kills
+ *   - Avg Damage
+ *   - Avg Assists
+ *   - Avg K/D-style value
+ *
+ * Placement is TEAM performance and is NOT used in individual Merit.
+ * Matches played do not directly award Merit.
+ *
+ * Current database has no separate deaths column, so avg_kd currently
+ * represents kills per played match. When deaths are stored later,
+ * only avgKd() needs to change to true kills / deaths.
  */
 
 export type MeritTaskStatsRow = {
@@ -47,24 +53,14 @@ export type MeritRow = {
   avg_kills: number;
   avg_damage: number;
   avg_assists: number;
-
-  /**
-   * Current database does not store deaths separately.
-   * Therefore this is the available K/D-style value:
-   * kills per played match.
-   */
   avg_kd: number;
 
   /**
-   * Kept for UI compatibility only.
-   * NEVER used in Merit calculation.
+   * Compatibility field only.
+   * Placement is NOT used anywhere in Merit.
    */
   avg_placement_points: number;
 
-  /**
-   * 0-1 reliability of the competitive sample.
-   * It does not itself add points.
-   */
   sample_weight: number;
 };
 
@@ -81,10 +77,8 @@ const MAX_EXTRA_BONUS = 8;
 const PARTIAL_CREDIT = 0.4;
 
 /**
- * Sample-size smoothing.
- *
- * More matches do NOT automatically increase Merit.
- * This only reduces the influence of tiny samples.
+ * Sample smoothing only.
+ * More matches do NOT directly increase Merit.
  */
 const SAMPLE_K = 8;
 
@@ -99,11 +93,6 @@ type RoleWeights = {
   kd: number;
 };
 
-/**
- * Role-aware weighting is applied only to INDIVIDUAL metrics.
- *
- * Placement is intentionally absent.
- */
 function roleWeights(role: string): RoleWeights {
   switch (role.trim().toLowerCase()) {
     case "igl":
@@ -183,13 +172,6 @@ function mean(values: number[]): number {
   );
 }
 
-/**
- * Normalizes a metric across players.
- *
- * Lowest  -> 0
- * Highest -> 100
- * Same    -> 50
- */
 function normalizer(
   values: number[],
 ) {
@@ -225,16 +207,6 @@ function normalizer(
 /* TASK DATA                                                                  */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Task/OCR data is optional.
- *
- * Until the RPC exists/returns data:
- * - task score stays neutral at 50
- * - no player is falsely rewarded or punished
- *
- * Once OCR/task data starts returning rows, the same 45% bucket
- * automatically starts using it.
- */
 export async function listMeritTaskStats(): Promise<
   MeritTaskStatsRow[]
 > {
@@ -296,8 +268,7 @@ export async function loadMeritSource(): Promise<
   ]);
 
   return {
-    players:
-      players as Player[],
+    players: players as Player[],
     taskStats,
     entries,
   };
@@ -314,8 +285,8 @@ type PlayerAggregate = {
   assists: number;
 
   /**
-   * Individual match performance used for consistency.
-   * Placement is NEVER included.
+   * Individual match score used only for consistency.
+   * NO placement.
    */
   matchPerformance: number[];
 };
@@ -346,10 +317,6 @@ function aggregatePlayers(
 
     if (!agg) continue;
 
-    /**
-     * Same played-match rule already used elsewhere:
-     * a player counts for the match if any individual stat > 0.
-     */
     if (!didPlay(entry)) {
       continue;
     }
@@ -360,12 +327,10 @@ function aggregatePlayers(
     agg.assists += entry.assists;
 
     /**
-     * Individual-only consistency number.
+     * Consistency uses only individual output.
      *
-     * Damage is scaled only so it can be combined with kills/assists.
-     * This is NOT the final Merit score.
-     *
-     * NO placement.
+     * Damage is scaled down only because its raw range is much
+     * larger than kills/assists.
      */
     agg.matchPerformance.push(
       entry.kills +
@@ -394,21 +359,23 @@ export function computeMeritIndex(
       a.id.localeCompare(b.id),
     );
 
-  const aggs = aggregatePlayers(
-    source.entries,
-    players,
-  );
+  const aggs =
+    aggregatePlayers(
+      source.entries,
+      players,
+    );
 
-  const taskMap = new Map(
-    source.taskStats.map(
-      (row) => [
-        row.player_id,
-        row,
-      ],
-    ),
-  );
+  const taskMap =
+    new Map<string, MeritTaskStatsRow>(
+      source.taskStats.map(
+        (row) => [
+          row.player_id,
+          row,
+        ],
+      ),
+    );
 
-  const playersWithMatches =
+  const playedPlayers =
     players.filter(
       (player) =>
         (aggs.get(
@@ -426,33 +393,25 @@ export function computeMeritIndex(
       | "kills"
       | "damage"
       | "assists",
-  ) => {
+  ): number => {
     const agg =
       aggs.get(player.id)!;
 
-    if (!agg.matches) {
-      return 0;
-    }
-
-    return (
-      agg[stat] /
-      agg.matches
-    );
+    return agg.matches
+      ? agg[stat] /
+        agg.matches
+      : 0;
   };
 
   /**
-   * Current DB has no separate deaths field.
+   * Current database does not contain deaths.
    *
-   * So the currently available K/D-style metric is:
-   *
-   *     kills / played matches
-   *
-   * As soon as a deaths field exists, this function can become
-   * actual kills/deaths without touching the rest of the formula.
+   * Current available K/D-style metric:
+   *     kills / matches played
    */
-  const averageKd = (
+  const avgKd = (
     player: Player,
-  ) => {
+  ): number => {
     return averageStat(
       player,
       "kills",
@@ -463,9 +422,9 @@ export function computeMeritIndex(
   /* NORMALIZATION                                                          */
   /* ---------------------------------------------------------------------- */
 
-  const normalizeKills =
+  const normKills =
     normalizer(
-      playersWithMatches.map(
+      playedPlayers.map(
         (player) =>
           averageStat(
             player,
@@ -474,9 +433,9 @@ export function computeMeritIndex(
       ),
     );
 
-  const normalizeDamage =
+  const normDamage =
     normalizer(
-      playersWithMatches.map(
+      playedPlayers.map(
         (player) =>
           averageStat(
             player,
@@ -485,9 +444,9 @@ export function computeMeritIndex(
       ),
     );
 
-  const normalizeAssists =
+  const normAssists =
     normalizer(
-      playersWithMatches.map(
+      playedPlayers.map(
         (player) =>
           averageStat(
             player,
@@ -496,15 +455,15 @@ export function computeMeritIndex(
       ),
     );
 
-  const normalizeKd =
+  const normKd =
     normalizer(
-      playersWithMatches.map(
-        averageKd,
+      playedPlayers.map(
+        avgKd,
       ),
     );
 
   /* ---------------------------------------------------------------------- */
-  /* RAW INDIVIDUAL PERFORMANCE                                             */
+  /* RAW PERFORMANCE                                                        */
   /* ---------------------------------------------------------------------- */
 
   const rawPerformance =
@@ -519,7 +478,6 @@ export function computeMeritIndex(
         player.id,
         0,
       );
-
       continue;
     }
 
@@ -529,29 +487,32 @@ export function computeMeritIndex(
       );
 
     const score =
-      normalizeKills(
+      normKills(
         averageStat(
           player,
           "kills",
         ),
       ) *
         weights.kills +
-      normalizeDamage(
+
+      normDamage(
         averageStat(
           player,
           "damage",
         ),
       ) *
         weights.damage +
-      normalizeAssists(
+
+      normAssists(
         averageStat(
           player,
           "assists",
         ),
       ) *
         weights.assists +
-      normalizeKd(
-        averageKd(player),
+
+      normKd(
+        avgKd(player),
       ) *
         weights.kd;
 
@@ -563,7 +524,7 @@ export function computeMeritIndex(
 
   const performanceMean =
     mean(
-      playersWithMatches.map(
+      playedPlayers.map(
         (player) =>
           rawPerformance.get(
             player.id,
@@ -575,7 +536,7 @@ export function computeMeritIndex(
   /* FINAL ROWS                                                             */
   /* ---------------------------------------------------------------------- */
 
-  const rows: MeritRow[] =
+  const rows =
     players.map((player) => {
       const agg =
         aggs.get(player.id)!;
@@ -622,8 +583,7 @@ export function computeMeritIndex(
         );
 
       /**
-       * Until real task/OCR data exists,
-       * this remains neutral.
+       * No task data = neutral task component.
        */
       let taskScore = 50;
 
@@ -651,11 +611,11 @@ export function computeMeritIndex(
           );
       }
 
-      /* ----------------------- PERFORMANCE ---------------------------- */
+      /* ------------------------ PERFORMANCE ---------------------------- */
 
       /**
-       * Match count ONLY affects reliability.
-       * It does not add points directly.
+       * Sample weight does not award points.
+       * It only reduces volatility from very small samples.
        */
       const sampleWeight =
         agg.matches > 0
@@ -679,10 +639,11 @@ export function computeMeritIndex(
             )
           : 0;
 
-      /* ------------------------ CONSISTENCY ---------------------------- */
+      /* ------------------------- CONSISTENCY ---------------------------- */
 
       /**
-       * Task reliability is neutral until task/OCR data exists.
+       * Task reliability becomes neutral
+       * until real task/OCR data exists.
        */
       const taskReliability =
         totalSubmissions > 0
@@ -691,9 +652,8 @@ export function computeMeritIndex(
           : 0.5;
 
       /**
-       * Individual match consistency.
-       *
-       * NO PLACEMENT.
+       * Individual consistency only.
+       * Placement is never used.
        */
       let matchConsistency = 0.5;
 
@@ -701,7 +661,7 @@ export function computeMeritIndex(
         agg.matchPerformance
           .length >= 2
       ) {
-        const avg =
+        const average =
           mean(
             agg.matchPerformance,
           );
@@ -710,9 +670,8 @@ export function computeMeritIndex(
           mean(
             agg.matchPerformance.map(
               (value) =>
-                (
-                  value - avg
-                ) ** 2,
+                (value - average) **
+                2,
             ),
           );
 
@@ -722,9 +681,9 @@ export function computeMeritIndex(
           );
 
         const coefficient =
-          avg > 0
+          average > 0
             ? standardDeviation /
-              avg
+              average
             : 1;
 
         matchConsistency =
@@ -746,10 +705,11 @@ export function computeMeritIndex(
               0.6 +
             matchConsistency *
               0.4
-          ) * 100,
+          ) *
+            100,
         );
 
-      /* -------------------------- PENALTY ------------------------------ */
+      /* --------------------------- PENALTY ------------------------------ */
 
       const penalty =
         assigned > 0
@@ -760,17 +720,8 @@ export function computeMeritIndex(
             MAX_MISS_PENALTY
           : 0;
 
-      /* ---------------------------- MERIT ------------------------------ */
+      /* ----------------------------- MERIT ------------------------------ */
 
-      /**
-       * FINAL FORMULA:
-       *
-       * 45% Tasks
-       * 40% Individual Performance
-       * 15% Consistency
-       *
-       * Placement = ZERO.
-       */
       const merit =
         clamp(
           taskScore *
@@ -850,13 +801,12 @@ export function computeMeritIndex(
 
         avg_kd:
           Math.round(
-            averageKd(player) *
-              100,
+            avgKd(player) * 100,
           ) / 100,
 
         /**
-         * Explicitly zero.
-         * Placement is team performance and is never used.
+         * Placement is intentionally zero.
+         * It does not participate in the formula.
          */
         avg_placement_points: 0,
 
@@ -939,4 +889,4 @@ export function meritTier(
     label: "Needs Work",
     className: "text-destructive",
   };
-              }
+}
