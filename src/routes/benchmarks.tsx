@@ -1,5 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef, useState } from "react";
 import {
   CheckCircle2,
   ImageUp,
@@ -8,14 +9,17 @@ import {
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { BenchmarkCard } from "@/components/benchmark/BenchmarkCard";
+import { BenchmarkUploader } from "@/components/benchmark/BenchmarkUploader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAuthenticatedPlayer } from "@/lib/benchmark/player";
 import {
   listBenchmarksFromDb,
   listMySubmissions,
+  saveSubmission,
 } from "@/lib/benchmark/db";
-import type { PlayerRole } from "@/lib/benchmark";
+import type { Benchmark, PlayerRole } from "@/lib/benchmark";
 import { useSession } from "@/lib/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/benchmarks")({
   ssr: false,
@@ -43,8 +47,14 @@ export const Route = createFileRoute("/benchmarks")({
 });
 
 function BenchmarksPage() {
-  const navigate = useNavigate();
   const { session, loading } = useSession();
+  const qc = useQueryClient();
+
+  const [openUploadId, setOpenUploadId] = useState<string | null>(null);
+
+  const uploadSectionRefs = useRef<
+    Record<string, HTMLDivElement | null>
+  >({});
 
   const player = useQuery({
     queryKey: ["authenticated-player", session?.user.id ?? null],
@@ -82,11 +92,22 @@ function BenchmarksPage() {
     benchmarks.isLoading ||
     player.isLoading;
 
-  const openTask = (id: string) => {
-    navigate({
-      to: "/benchmarks/$id",
-      params: { id },
-    });
+  const toggleUpload = (benchmark: Benchmark) => {
+    const next =
+      openUploadId === benchmark.id
+        ? null
+        : benchmark.id;
+
+    setOpenUploadId(next);
+
+    if (next) {
+      window.setTimeout(() => {
+        uploadSectionRefs.current[benchmark.id]?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+    }
   };
 
   return (
@@ -156,6 +177,8 @@ function BenchmarksPage() {
           <div className="grid gap-4 md:grid-cols-2">
             {visible.map((benchmark) => {
               const completed = passedIds.has(benchmark.id);
+              const uploadOpen =
+                openUploadId === benchmark.id;
 
               return (
                 <div
@@ -165,16 +188,13 @@ function BenchmarksPage() {
                   <BenchmarkCard
                     benchmark={benchmark}
                     completed={completed}
-                    onClick={() => openTask(benchmark.id)}
+                    onClick={() => toggleUpload(benchmark)}
                   />
 
                   <button
                     type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openTask(benchmark.id);
-                    }}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-neon/30 bg-neon-soft/60 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-neon transition-all hover:bg-neon-soft hover:border-neon/50"
+                    onClick={() => toggleUpload(benchmark)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-neon/30 bg-neon-soft/60 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-neon transition-all hover:border-neon/50 hover:bg-neon-soft"
                   >
                     {completed ? (
                       <CheckCircle2 className="h-4 w-4" />
@@ -183,7 +203,7 @@ function BenchmarksPage() {
                     )}
 
                     {completed
-                      ? "View Completed Task"
+                      ? "View / Submit Again"
                       : "Upload Screenshot"}
                   </button>
 
@@ -191,6 +211,74 @@ function BenchmarksPage() {
                     <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
                       <Upload className="h-3 w-3" />
                       Opens OCR verification
+                    </div>
+                  )}
+
+                  {uploadOpen && (
+                    <div
+                      ref={(element) => {
+                        uploadSectionRefs.current[
+                          benchmark.id
+                        ] = element;
+                      }}
+                      className="rounded-2xl border border-neon/20 bg-surface/60 p-4"
+                    >
+                      <div className="mb-4">
+                        <div className="text-sm font-bold">
+                          Submit Evidence
+                        </div>
+
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Select the original Free Fire screenshot. The
+                          screenshot will be read by Tesseract OCR directly
+                          in your browser.
+                        </div>
+                      </div>
+
+                      <BenchmarkUploader
+                        benchmark={benchmark}
+                        onComplete={async (evaluation) => {
+                          if (!player.data) return;
+
+                          try {
+                            await saveSubmission(
+                              player.data.id,
+                              benchmark,
+                              evaluation,
+                            );
+
+                            await qc.invalidateQueries({
+                              queryKey: [
+                                "my-submissions",
+                                player.data.id,
+                              ],
+                            });
+
+                            if (
+                              evaluation.status === "pass"
+                            ) {
+                              toast.success(
+                                "Task completed and saved successfully.",
+                              );
+                            } else if (
+                              evaluation.status === "fail"
+                            ) {
+                              toast.info(
+                                "Screenshot saved. Task requirements were not fully met.",
+                              );
+                            } else {
+                              toast.info(
+                                "Screenshot saved for review.",
+                              );
+                            }
+                          } catch (error: any) {
+                            toast.error(
+                              error?.message ??
+                                "Could not save your submission",
+                            );
+                          }
+                        }}
+                      />
                     </div>
                   )}
                 </div>
