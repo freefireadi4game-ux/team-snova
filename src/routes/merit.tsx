@@ -103,9 +103,9 @@ function MeritPage() {
                     </div>
 
                     <PlayerAvatar
-                      src={row.player.photo_url}
-                      alt={row.player.ign}
-                      className="h-10 w-10 shrink-0"
+                      photoPath={row.player.photo_url}
+                      name={row.player.ign}
+                      size={40}
                     />
 
                     <div className="min-w-0 flex-1">
