@@ -11,6 +11,7 @@ import {
   Map as MapIcon,
   Medal,
   UserRound,
+  Award,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -25,6 +26,7 @@ const NAV = [
   { to: "/players", label: "Roster", icon: Users },
   { to: "/tournaments", label: "Tournaments", icon: Trophy },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/merit", label: "Merit Index", icon: Award },
   { to: "/achievements", label: "Achievements", icon: Medal },
   { to: "/compare", label: "Compare", icon: GitCompareArrows },
   { to: "/maps", label: "Maps", icon: MapIcon },
@@ -246,6 +248,11 @@ function BottomNav() {
       icon: BarChart3,
     },
     {
+      to: "/merit",
+      label: "Merit",
+      icon: Award,
+    },
+    {
       to: "/achievements",
       label: "Awards",
       icon: Medal,
@@ -254,11 +261,6 @@ function BottomNav() {
       to: "/compare",
       label: "Compare",
       icon: GitCompareArrows,
-    },
-    {
-      to: "/maps",
-      label: "Maps",
-      icon: MapIcon,
     },
   ];
 
@@ -282,4 +284,4 @@ function BottomNav() {
       </nav>
     </div>
   );
-      }
+}
