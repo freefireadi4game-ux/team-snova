@@ -25,10 +25,23 @@ function numberFromText(value: string): number | null {
 
   if (!cleaned) return null;
 
-  const normalized = cleaned.replace("%", "");
-  const number = Number(normalized);
+  const n = Number(cleaned.replace("%", ""));
+  return Number.isFinite(n) ? n : null;
+}
 
-  return Number.isFinite(number) ? number : null;
+function findMetric(
+  text: string,
+  patterns: RegExp[],
+): number | null {
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (!match) continue;
+
+    const value = numberFromText(match[1] ?? "");
+    if (value !== null) return value;
+  }
+
+  return null;
 }
 
 function wordsFromOCR(ocr: OCRResult): OCRWord[] {
@@ -44,23 +57,106 @@ function wordsFromOCR(ocr: OCRResult): OCRWord[] {
     .filter((word) => word.text);
 }
 
-function findMetric(
-  text: string,
-  patterns: RegExp[],
+function findNumberNearLabel(
+  ocr: OCRResult,
+  labelPattern: RegExp,
+  options?: {
+    direction?: "right" | "below" | "any";
+    maxX?: number;
+    maxY?: number;
+    minValue?: number;
+    maxValue?: number;
+  },
 ): number | null {
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
+  const words = wordsFromOCR(ocr);
 
-    if (!match) continue;
+  const labels = words.filter((word) =>
+    labelPattern.test(normalize(word.text)),
+  );
 
-    const value = numberFromText(match[1] ?? "");
+  if (!labels.length) return null;
 
-    if (value !== null) {
-      return value;
+  const numericWords = words
+    .map((word) => ({
+      ...word,
+      value: numberFromText(word.text),
+    }))
+    .filter((word) => {
+      if (word.value === null) return false;
+
+      if (
+        options?.minValue !== undefined &&
+        word.value < options.minValue
+      ) {
+        return false;
+      }
+
+      if (
+        options?.maxValue !== undefined &&
+        word.value > options.maxValue
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+  let best: {
+    value: number;
+    score: number;
+  } | null = null;
+
+  for (const label of labels) {
+    for (const candidate of numericWords) {
+      const labelCenterX =
+        label.left + label.width / 2;
+
+      const candidateCenterX =
+        candidate.left + candidate.width / 2;
+
+      const dx = candidateCenterX - labelCenterX;
+      const dy = candidate.top - label.top;
+
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      const direction =
+        options?.direction ?? "any";
+
+      if (direction === "right" && dx < -25) {
+        continue;
+      }
+
+      if (direction === "below" && dy < -15) {
+        continue;
+      }
+
+      if (
+        options?.maxX !== undefined &&
+        absX > options.maxX
+      ) {
+        continue;
+      }
+
+      if (
+        options?.maxY !== undefined &&
+        absY > options.maxY
+      ) {
+        continue;
+      }
+
+      const score = absY * 6 + absX;
+
+      if (!best || score < best.score) {
+        best = {
+          value: candidate.value!,
+          score,
+        };
+      }
     }
   }
 
-  return null;
+  return best?.value ?? null;
 }
 
 function detectSourceType(
@@ -100,136 +196,20 @@ function detectSourceType(
   return null;
 }
 
-/**
- * Find a numeric OCR word close to a label.
- *
- * This is deliberately stricter than the previous implementation:
- * - horizontal distance matters
- * - vertical distance matters
- * - tiny unrelated HUD numbers are rejected where possible
- */
-function findNumberNearLabel(
-  ocr: OCRResult,
-  labelPattern: RegExp,
-  options?: {
-    direction?: "right" | "below" | "any";
-    maxX?: number;
-    maxY?: number;
-    minValue?: number;
-    maxValue?: number;
-    requireConfidence?: number;
-  },
-): number | null {
-  const words = wordsFromOCR(ocr);
+function detectBooyah(text: string): number | null {
+  const value = normalize(text);
 
-  const labels = words.filter((word) =>
-    labelPattern.test(normalize(word.text)),
-  );
-
-  if (!labels.length) return null;
-
-  const numericWords = words
-    .map((word) => ({
-      ...word,
-      value: numberFromText(word.text),
-    }))
-    .filter((word) => {
-      if (word.value === null) return false;
-
-      const minValue = options?.minValue ?? 0;
-      const maxValue =
-        options?.maxValue ?? Number.POSITIVE_INFINITY;
-
-      if (word.value < minValue || word.value > maxValue) {
-        return false;
-      }
-
-      if (
-        options?.requireConfidence !== undefined &&
-        (word.confidence ?? 0) < options.requireConfidence
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-
-  if (!numericWords.length) return null;
-
-  let best:
-    | {
-        value: number;
-        score: number;
-      }
-    | null = null;
-
-  for (const label of labels) {
-    for (const candidate of numericWords) {
-      const labelCenterX =
-        label.left + Math.max(label.width ?? 0, 0) / 2;
-
-      const candidateCenterX =
-        candidate.left +
-        Math.max(candidate.width ?? 0, 0) / 2;
-
-      const dx = candidateCenterX - labelCenterX;
-      const dy = candidate.top - label.top;
-
-      const absX = Math.abs(dx);
-      const absY = Math.abs(dy);
-
-      const direction =
-        options?.direction ?? "any";
-
-      if (direction === "right" && dx < -20) {
-        continue;
-      }
-
-      if (direction === "below" && dy < -10) {
-        continue;
-      }
-
-      if (options?.maxX !== undefined && absX > options.maxX) {
-        continue;
-      }
-
-      if (options?.maxY !== undefined && absY > options.maxY) {
-        continue;
-      }
-
-      const score =
-        absY * 5 +
-        absX +
-        (direction === "right" && dx < 0 ? 500 : 0) +
-        (direction === "below" && dy < 0 ? 500 : 0);
-
-      if (!best || score < best.score) {
-        best = {
-          value: candidate.value!,
-          score,
-        };
-      }
-    }
-  }
-
-  return best?.value ?? null;
+  return value.includes("booyah") ||
+    value.includes("victory") ||
+    value.includes("winner")
+    ? 1
+    : 0;
 }
 
-/**
- * Training screenshots have a distinctive scoreboard:
- *
- *          168
- *      ELIMINATIONS
- *
- * and the smaller right-side stats:
- * 15 HEADSHOTS
- * 12 HIGHEST ELIMINATION STREAK
- * TOTAL DAMAGE 70397
- * HEADSHOT RATE 8.93%
- * K/D RATIO 1.42
- *
- * Prefer label/value relationships over random OCR numbers.
- */
+/* -------------------------------------------------------------------------- */
+/* TRAINING SCOREBOARD                                                        */
+/* -------------------------------------------------------------------------- */
+
 function parseTraining(
   ocr: OCRResult,
   text: string,
@@ -248,66 +228,66 @@ function parseTraining(
     );
 
   /*
+   * In the provided Free Fire training screenshot:
+   *
+   * 168
    * ELIMINATIONS
    *
-   * In the supplied screenshots this is the large number on the
-   * left side of the scoreboard. It is normally much larger than
-   * the small HUD numbers around it.
+   * The eliminations number is the large number above the label.
+   *
+   * We therefore search specifically above ELIMINATIONS and reject
+   * tiny HUD numbers.
    */
   let kills: number | null = null;
 
-  const eliminationLabelIndex = words.findIndex((word) =>
+  const eliminationLabel = words.find((word) =>
     /^eliminations?$/i.test(word.text),
   );
 
-  if (eliminationLabelIndex >= 0) {
-    const label = words[eliminationLabelIndex];
-
+  if (eliminationLabel) {
     const candidates = numericWords
       .filter((candidate) => {
         const dx =
-          candidate.left -
-          label.left;
+          candidate.left - eliminationLabel.left;
 
         const dy =
-          candidate.top -
-          label.top;
+          candidate.top - eliminationLabel.top;
 
         return (
           Math.abs(dx) <= 350 &&
-          dy < 40 &&
-          dy > -450 &&
+          dy < 50 &&
+          dy > -500 &&
           candidate.value! >= 20
         );
       })
       .sort((a, b) => {
-        const aDx = Math.abs(
-          a.left - label.left,
-        );
-        const aDy = Math.abs(
-          a.top - label.top,
-        );
+        const scoreA =
+          Math.abs(
+            a.top - eliminationLabel.top,
+          ) * 5 +
+          Math.abs(
+            a.left - eliminationLabel.left,
+          );
 
-        const bDx = Math.abs(
-          b.left - label.left,
-        );
-        const bDy = Math.abs(
-          b.top - label.top,
-        );
+        const scoreB =
+          Math.abs(
+            b.top - eliminationLabel.top,
+          ) * 5 +
+          Math.abs(
+            b.left - eliminationLabel.left,
+          );
 
-        return (
-          (aDy * 5 + aDx) -
-          (bDy * 5 + bDx)
-        );
+        return scoreA - scoreB;
       });
 
     kills = candidates[0]?.value ?? null;
   }
 
   /*
-   * If spatial extraction fails, use a conservative textual
-   * fallback. Require a reasonably large value so HUD numbers
-   * like 1 / 8 / 12 are less likely to be selected as kills.
+   * Text fallback.
+   *
+   * Require at least two digits so numbers like 1, 8 or 12
+   * from unrelated HUD elements are not chosen as kills.
    */
   if (kills === null) {
     kills = findMetric(text, [
@@ -326,9 +306,9 @@ function parseTraining(
       /^headshots?$/i,
       {
         direction: "right",
-        maxX: 420,
-        maxY: 100,
-        minValue: 1,
+        maxX: 450,
+        maxY: 140,
+        minValue: 0,
         maxValue: 999,
       },
     );
@@ -344,8 +324,8 @@ function parseTraining(
       /^rate$/i,
       {
         direction: "right",
-        maxX: 420,
-        maxY: 110,
+        maxX: 450,
+        maxY: 140,
         minValue: 0,
         maxValue: 100,
       },
@@ -362,13 +342,17 @@ function parseTraining(
       /^damage$/i,
       {
         direction: "right",
-        maxX: 450,
-        maxY: 120,
+        maxX: 500,
+        maxY: 150,
         minValue: 100,
         maxValue: 500000,
       },
     );
 
+  /*
+   * K/D is read directly from the screenshot.
+   * It is never calculated from matches or deaths.
+   */
   const kdRatio = findMetric(text, [
     /\bk\/d\s*ratio\s*[:\-]?\s*([0-9.]+)/i,
     /\bk\/d\s*[:\-]?\s*([0-9.]+)/i,
@@ -385,8 +369,8 @@ function parseTraining(
       /^streak$/i,
       {
         direction: "right",
-        maxX: 450,
-        maxY: 130,
+        maxX: 500,
+        maxY: 160,
         minValue: 1,
         maxValue: 999,
       },
@@ -400,10 +384,11 @@ function parseTraining(
     kd_ratio: kdRatio,
     elimination_streak: eliminationStreak,
 
-    // Training rank/placement is intentionally ignored.
+    /*
+     * TRAINING DOES NOT USE PLACEMENT.
+     */
     placement: null,
 
-    // Training screenshots do not provide these benchmark values.
     booyah: 0,
     wins: null,
     matches: null,
@@ -414,17 +399,10 @@ function parseTraining(
   };
 }
 
-/**
- * Solo-vs-Squad / BR-Ranked:
- *
- * Example supplied screenshot:
- *   #1/14
- *
- * Player row:
- *   K = 22
- *   A = 3
- *   DMG = 9192
- */
+/* -------------------------------------------------------------------------- */
+/* SOLO VS SQUAD / BR SCOREBOARD                                              */
+/* -------------------------------------------------------------------------- */
+
 function parseSoloVsSquad(
   ocr: OCRResult,
   text: string,
@@ -432,17 +410,17 @@ function parseSoloVsSquad(
   let placement: number | null = null;
 
   /*
-   * Placement:
+   * Example:
    * #1/14
-   * #1 / 14
-   * #1
    */
   const placementMatch = text.match(
     /#\s*(\d+)\s*\/\s*\d+/i,
   );
 
   if (placementMatch) {
-    placement = Number(placementMatch[1]);
+    placement = Number(
+      placementMatch[1],
+    );
   }
 
   if (placement === null) {
@@ -458,14 +436,13 @@ function parseSoloVsSquad(
   }
 
   /*
-   * Kills:
    * K 22
    * K: 22
    */
-  let kills =
-    findMetric(text, [
-      /(?:^|\s)k\s*[:\-]?\s*(\d+)(?:\s|$)/i,
-    ]);
+  let kills = findMetric(text, [
+    /(?:^|\s)k\s*[:\-]?\s*(\d+)(?:\s|$)/i,
+    /\bkills?\s*[:\-]?\s*(\d+)/i,
+  ]);
 
   if (kills === null) {
     kills = findNumberNearLabel(
@@ -474,7 +451,7 @@ function parseSoloVsSquad(
       {
         direction: "right",
         maxX: 500,
-        maxY: 120,
+        maxY: 140,
         minValue: 0,
         maxValue: 100,
       },
@@ -482,14 +459,13 @@ function parseSoloVsSquad(
   }
 
   /*
-   * Assists:
    * A 3
    * A: 3
    */
-  let assists =
-    findMetric(text, [
-      /(?:^|\s)a\s*[:\-]?\s*(\d+)(?:\s|$)/i,
-    ]);
+  let assists = findMetric(text, [
+    /(?:^|\s)a\s*[:\-]?\s*(\d+)(?:\s|$)/i,
+    /\bassists?\s*[:\-]?\s*(\d+)/i,
+  ]);
 
   if (assists === null) {
     assists = findNumberNearLabel(
@@ -498,7 +474,7 @@ function parseSoloVsSquad(
       {
         direction: "right",
         maxX: 500,
-        maxY: 120,
+        maxY: 140,
         minValue: 0,
         maxValue: 100,
       },
@@ -506,15 +482,12 @@ function parseSoloVsSquad(
   }
 
   /*
-   * Damage:
    * DMG 9192
-   * damage 9192
    */
-  let damage =
-    findMetric(text, [
-      /\bdmg\s*[:\-]?\s*([0-9,]+)/i,
-      /\bdamage\s*[:\-]?\s*([0-9,]+)/i,
-    ]);
+  let damage = findMetric(text, [
+    /\bdmg\s*[:\-]?\s*([0-9,]+)/i,
+    /\bdamage\s*[:\-]?\s*([0-9,]+)/i,
+  ]);
 
   if (damage === null) {
     damage = findNumberNearLabel(
@@ -522,8 +495,8 @@ function parseSoloVsSquad(
       /^dmg$/i,
       {
         direction: "right",
-        maxX: 600,
-        maxY: 140,
+        maxX: 650,
+        maxY: 160,
         minValue: 0,
         maxValue: 500000,
       },
@@ -535,19 +508,28 @@ function parseSoloVsSquad(
     damage,
     assists,
     placement,
+
     headshots: null,
     headshot_rate: null,
+
     booyah:
       placement === 1 ? 1 : 0,
+
     wins:
       placement === 1 ? 1 : null,
+
     matches: 1,
     elimination_streak: null,
     kd_ratio: null,
+
     mode: "solo vs squad",
     source_type: "solo_vs_squad",
   };
 }
+
+/* -------------------------------------------------------------------------- */
+/* MAIN PARSER                                                               */
+/* -------------------------------------------------------------------------- */
 
 export function parseBenchmarkOCR(
   ocr: OCRResult,
@@ -558,15 +540,26 @@ export function parseBenchmarkOCR(
   const detectedSourceType =
     detectSourceType(text);
 
+  /*
+   * IMPORTANT:
+   * The task's configured source type has priority.
+   *
+   * This is important because a screenshot may not OCR
+   * the mode name correctly.
+   */
   const sourceType =
     expectedSourceType ??
     detectedSourceType ??
     null;
 
-  let extracted: Partial<ExtractedBenchmarkStats>;
+  let extracted:
+    Partial<ExtractedBenchmarkStats>;
 
   if (sourceType === "training") {
-    extracted = parseTraining(ocr, text);
+    extracted = parseTraining(
+      ocr,
+      text,
+    );
   } else if (
     sourceType === "solo_vs_squad" ||
     sourceType === "battle_royale"
@@ -576,9 +569,6 @@ export function parseBenchmarkOCR(
       text,
     );
   } else {
-    /*
-     * Generic fallback for custom tasks.
-     */
     extracted = {
       kills: findMetric(text, [
         /\beliminations?\s*[:\-]?\s*([0-9,]+)/i,
@@ -598,7 +588,7 @@ export function parseBenchmarkOCR(
         /\bdmg\s*[:\-]?\s*([0-9,]+)/i,
       ]),
 
-      booyah: 0,
+      booyah: detectBooyah(text),
 
       wins: findMetric(text, [
         /\bwins?\s*[:\-]?\s*([0-9,]+)/i,
@@ -616,9 +606,12 @@ export function parseBenchmarkOCR(
         /\bassists?\s*[:\-]?\s*([0-9,]+)/i,
       ]),
 
-      elimination_streak: findMetric(text, [
-        /\bhighest\s*elimination\s*streak\s*[:\-]?\s*([0-9,]+)/i,
-      ]),
+      elimination_streak: findMetric(
+        text,
+        [
+          /\bhighest\s*elimination\s*streak\s*[:\-]?\s*([0-9,]+)/i,
+        ],
+      ),
 
       kd_ratio: findMetric(text, [
         /\bk\/d\s*ratio\s*[:\-]?\s*([0-9.]+)/i,
@@ -630,8 +623,7 @@ export function parseBenchmarkOCR(
   }
 
   return {
-    kills:
-      extracted.kills ?? null,
+    kills: extracted.kills ?? null,
 
     headshots:
       extracted.headshots ?? null,
@@ -667,7 +659,8 @@ export function parseBenchmarkOCR(
       extracted.mode ?? null,
 
     source_type:
-      extracted.source_type ?? sourceType,
+      extracted.source_type ??
+      sourceType,
 
     confidence:
       ocr.confidence,
@@ -675,4 +668,4 @@ export function parseBenchmarkOCR(
     raw_text:
       ocr.text,
   };
-      }
+}
