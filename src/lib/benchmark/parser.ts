@@ -271,14 +271,23 @@ function extractSoloVsSquadAssists(
 
 export function parseBenchmarkOCR(
   ocr: OCRResult,
+  /**
+   * The source type of the task being submitted. Used as a fallback when the
+   * screenshot text itself does not clearly announce the mode, so a
+   * solo-vs-squad scoreboard is still parsed with the scoreboard rules.
+   */
+  expectedSourceType?: BenchmarkSourceType | null,
 ): ExtractedBenchmarkStats {
   const text = cleanText(ocr.text);
   const normalized = normalize(text);
 
-  const sourceType = detectSourceType(text);
+  const detected = detectSourceType(text);
+  const sourceType = detected ?? expectedSourceType ?? null;
   const isTraining = sourceType === "training";
   const isSoloVsSquad =
-    sourceType === "solo_vs_squad";
+    sourceType === "solo_vs_squad" ||
+    sourceType === "battle_royale";
+
 
   /*
    * TRAINING
