@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as PlayerLoginRouteImport } from './routes/player-login'
+import { Route as MeritRouteImport } from './routes/merit'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as BenchmarksRouteImport } from './routes/benchmarks'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -45,6 +46,11 @@ const StatsRoute = StatsRouteImport.update({
 const PlayerLoginRoute = PlayerLoginRouteImport.update({
   id: '/player-login',
   path: '/player-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeritRoute = MeritRouteImport.update({
+  id: '/merit',
+  path: '/merit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompareRoute = CompareRouteImport.update({
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/benchmarks': typeof BenchmarksRouteWithChildren
   '/compare': typeof CompareRoute
+  '/merit': typeof MeritRoute
   '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/benchmarks': typeof BenchmarksRouteWithChildren
   '/compare': typeof CompareRoute
+  '/merit': typeof MeritRoute
   '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
   '/benchmarks/$id': typeof BenchmarksIdRoute
@@ -242,6 +250,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/benchmarks': typeof BenchmarksRouteWithChildren
   '/compare': typeof CompareRoute
+  '/merit': typeof MeritRoute
   '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -272,6 +281,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/benchmarks'
     | '/compare'
+    | '/merit'
     | '/player-login'
     | '/stats'
     | '/admin'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/benchmarks'
     | '/compare'
+    | '/merit'
     | '/player-login'
     | '/stats'
     | '/benchmarks/$id'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/benchmarks'
     | '/compare'
+    | '/merit'
     | '/player-login'
     | '/stats'
     | '/_authenticated/admin'
@@ -358,6 +370,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BenchmarksRoute: typeof BenchmarksRouteWithChildren
   CompareRoute: typeof CompareRoute
+  MeritRoute: typeof MeritRoute
   PlayerLoginRoute: typeof PlayerLoginRoute
   StatsRoute: typeof StatsRoute
   JoinTokenRoute: typeof JoinTokenRoute
@@ -383,6 +396,13 @@ declare module '@tanstack/react-router' {
       path: '/player-login'
       fullPath: '/player-login'
       preLoaderRoute: typeof PlayerLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/merit': {
+      id: '/merit'
+      path: '/merit'
+      fullPath: '/merit'
+      preLoaderRoute: typeof MeritRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compare': {
@@ -635,6 +655,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BenchmarksRoute: BenchmarksRouteWithChildren,
   CompareRoute: CompareRoute,
+  MeritRoute: MeritRoute,
   PlayerLoginRoute: PlayerLoginRoute,
   StatsRoute: StatsRoute,
   JoinTokenRoute: JoinTokenRoute,
