@@ -2,7 +2,7 @@ import { didPlay, listPlayers, type Player } from "@/lib/data";
 import { listStatEntries, type StatEntry } from "@/lib/stats-core";
 
 /**
- * Merit Index
+ * MERIT INDEX
  *
  * FINAL WEIGHTAGE:
  *   45% Tasks
@@ -16,17 +16,16 @@ import { listStatEntries, type StatEntry } from "@/lib/stats-core";
  *   - K/D-style metric
  *
  * RULES:
- *   - Placement = TEAM performance -> never used.
- *   - Match count = never gives direct Merit points.
- *   - A task gets points ONLY when completed.
- *   - Incomplete task = 0 points.
- *   - Failed task = 0 points.
- *   - No partial credit.
+ *   - Placement is TEAM performance -> NOT USED.
+ *   - Match count does NOT directly add Merit.
+ *   - Task completed -> points.
+ *   - Task incomplete -> 0 points.
+ *   - Task failed -> 0 points.
+ *   - NO partial credit.
  *
  * NOTE:
- * Current match_stats does not contain deaths.
- * Therefore avg_kd currently represents kills per played match.
- * Once deaths are stored, only avgKd() needs to change.
+ * Current database does not contain deaths in match_stats.
+ * Therefore avg_kd currently uses kills per played match.
  */
 
 export type MeritTaskStatsRow = {
@@ -62,14 +61,14 @@ export type MeritRow = {
   avg_kd: number;
 
   /**
-   * Compatibility field only.
-   * Always 0 because placement is not part of individual Merit.
+   * Kept only for compatibility with existing UI/data types.
+   * Placement is never used in Merit.
    */
   avg_placement_points: number;
 
   /**
-   * Informational sample value only.
-   * Never added as points.
+   * Informational only.
+   * Never adds Merit points.
    */
   sample_weight: number;
 };
@@ -86,8 +85,8 @@ const MAX_MISS_PENALTY = 12;
 const MAX_EXTRA_BONUS = 8;
 
 /**
- * More matches do NOT directly increase Merit.
- * This constant is only used for the informational sample_weight.
+ * Only informational sample value.
+ * Match count does not directly award Merit.
  */
 const SAMPLE_K = 8;
 
@@ -102,8 +101,14 @@ type RoleWeights = {
   kd: number;
 };
 
-function roleWeights(role: string): RoleWeights {
-  switch (role.trim().toLowerCase()) {
+function roleWeights(
+  role: string,
+): RoleWeights {
+  switch (
+    role
+      .trim()
+      .toLowerCase()
+  ) {
     case "igl":
       return {
         kills: 0.15,
@@ -194,13 +199,14 @@ function mean(
 }
 
 /**
- * Converts a player metric into a 0-100 score relative to the roster average.
+ * Score an individual average against the roster average.
  *
- * Roster average -> 50
- * 2x average     -> 100
- * 0x average     -> 0
+ * Roster average = 50
+ * 2x roster average = 100
+ * 0x roster average = 0
  *
- * There is no min-max normalization and no sample-based score distortion.
+ * This avoids min/max normalization and avoids match-count
+ * shrinkage changing the actual performance order.
  */
 function relativeScore(
   value: number,
@@ -220,7 +226,9 @@ function relativeScore(
   }
 
   return clamp(
-    (value / rosterAverage) * 50,
+    (value /
+      rosterAverage) *
+      50,
   );
 }
 
@@ -244,10 +252,6 @@ export async function listMeritTaskStats(): Promise<
       "merit_task_stats",
     );
 
-    /**
-     * The task system is allowed to be unavailable while
-     * OCR/task infrastructure is still being completed.
-     */
     if (error) {
       console.warn(
         "[Merit] Task stats unavailable:",
@@ -312,7 +316,7 @@ type PlayerAggregate = {
   assists: number;
 
   /**
-   * Individual match output used only for consistency.
+   * Individual output per match.
    * Placement is never included.
    */
   matchOutput: number[];
@@ -354,10 +358,6 @@ function aggregatePlayers(
       continue;
     }
 
-    /**
-     * Count only matches where the player actually
-     * logged an individual stat.
-     */
     if (!didPlay(entry)) {
       continue;
     }
@@ -371,10 +371,9 @@ function aggregatePlayers(
       entry.assists;
 
     /**
-     * Individual output only.
+     * Individual consistency only.
      *
-     * Damage is divided by 1000 simply to keep
-     * the consistency metric numerically balanced.
+     * Placement is intentionally absent.
      */
     aggregate.matchOutput.push(
       entry.kills +
@@ -427,7 +426,7 @@ export function computeMeritIndex(
       ),
     );
 
-  const playersWithMatches =
+  const playedPlayers =
     players.filter(
       (player) =>
         (
@@ -438,7 +437,7 @@ export function computeMeritIndex(
     );
 
   /* ---------------------------------------------------------------------- */
-  /* AVERAGES                                                               */
+  /* AVERAGE HELPERS                                                        */
   /* ---------------------------------------------------------------------- */
 
   const averageStat = (
@@ -467,12 +466,10 @@ export function computeMeritIndex(
   };
 
   /**
-   * Current database does not contain deaths.
+   * Current DB has no deaths.
    *
-   * Current available K/D-style value:
-   *     kills / played matches
-   *
-   * This is kept only until actual deaths data is added.
+   * Current available K/D-style metric:
+   * kills per played match.
    */
   const avgKd = (
     player: Player,
@@ -489,7 +486,7 @@ export function computeMeritIndex(
 
   const rosterAverageKills =
     mean(
-      playersWithMatches.map(
+      playedPlayers.map(
         (player) =>
           averageStat(
             player,
@@ -500,7 +497,7 @@ export function computeMeritIndex(
 
   const rosterAverageDamage =
     mean(
-      playersWithMatches.map(
+      playedPlayers.map(
         (player) =>
           averageStat(
             player,
@@ -511,7 +508,7 @@ export function computeMeritIndex(
 
   const rosterAverageAssists =
     mean(
-      playersWithMatches.map(
+      playedPlayers.map(
         (player) =>
           averageStat(
             player,
@@ -522,13 +519,13 @@ export function computeMeritIndex(
 
   const rosterAverageKd =
     mean(
-      playersWithMatches.map(
+      playedPlayers.map(
         avgKd,
       ),
     );
 
   /* ---------------------------------------------------------------------- */
-  /* INDIVIDUAL PERFORMANCE                                                 */
+  /* PERFORMANCE SCORE                                                      */
   /* ---------------------------------------------------------------------- */
 
   const performanceMap =
@@ -561,9 +558,11 @@ export function computeMeritIndex(
       );
 
     /**
-     * Every metric is based on the PLAYER'S AVERAGE.
+     * Every metric uses the player's average.
      *
-     * Placement is completely absent.
+     * NO placement.
+     * NO total volume.
+     * NO match-count bonus.
      */
     const killsScore =
       relativeScore(
@@ -615,7 +614,7 @@ export function computeMeritIndex(
   }
 
   /* ---------------------------------------------------------------------- */
-  /* BUILD ROWS                                                             */
+  /* FINAL ROWS                                                             */
   /* ---------------------------------------------------------------------- */
 
   const rows: MeritRow[] =
@@ -654,6 +653,10 @@ export function computeMeritIndex(
             0,
         );
 
+      /**
+       * Every uncompleted task remains uncompleted,
+       * regardless of whether it was attempted.
+       */
       const missed =
         Math.max(
           0,
@@ -683,18 +686,15 @@ export function computeMeritIndex(
         );
 
       /**
-       * CRITICAL TASK RULE
+       * TASK RULE:
        *
-       * Every task that is not completed gives ZERO.
-       *
-       * No partial credit.
-       * No failed-task credit.
+       * Only completed tasks receive points.
+       * Every incomplete/failed task = 0.
+       * NO partial credit.
        *
        * Example:
-       *   10 assigned
-       *   7 completed
-       *
-       *   Task score = 70/100
+       *   5 assigned / 3 completed = 60 task score
+       *   5 assigned / 0 completed = 0 task score
        */
       const taskScore =
         assigned > 0
@@ -702,18 +702,13 @@ export function computeMeritIndex(
               (
                 completed /
                 assigned
-              ) * 100,
+              ) *
+                100,
             )
           : 0;
 
-      /* ----------------------- PERFORMANCE ---------------------------- */
+      /* ------------------------ PERFORMANCE ---------------------------- */
 
-      /**
-       * No sample shrinkage.
-       *
-       * More matches don't automatically increase
-       * or decrease the player's performance score.
-       */
       const performance =
         aggregate.matches > 0
           ? performanceMap.get(
@@ -721,18 +716,22 @@ export function computeMeritIndex(
             ) ?? 0
           : 0;
 
-      /* ------------------------- CONSISTENCY --------------------------- */
+      /* ------------------------- CONSISTENCY ---------------------------- */
 
       /**
-       * Task reliability.
+       * Task reliability:
        *
-       * No task attempts yet -> 0 because no task
-       * has been completed.
+       * No completed task attempts = 0.
+       * Once real task data exists, pass rate matters.
        */
       const taskReliability =
         totalSubmissions > 0
-          ? passSubmissions /
-            totalSubmissions
+          ? clamp(
+              passSubmissions /
+                totalSubmissions,
+              0,
+              1,
+            )
           : 0;
 
       /**
@@ -741,11 +740,17 @@ export function computeMeritIndex(
        * No placement.
        */
       let matchConsistency =
-        aggregate.matches >= 2
-          ? 0
-          : 100;
+        0;
 
       if (
+        aggregate.matches === 1
+      ) {
+        /**
+         * With only one match there is no spread to measure.
+         * Use a neutral consistency score.
+         */
+        matchConsistency = 50;
+      } else if (
         aggregate.matches >= 2
       ) {
         const average =
@@ -783,37 +788,53 @@ export function computeMeritIndex(
                 1,
                 coefficient,
               )
-            ) * 100,
+            ) *
+              100,
           );
       }
 
       /**
-       * If task system is not active yet,
-       * consistency is based only on individual matches.
+       * Before tasks are active:
+       *   consistency = individual match consistency
        *
        * Once task submissions exist:
        *   60% task reliability
-       *   40% match consistency
+       *   40% individual match consistency
        */
       const consistency =
         totalSubmissions > 0
           ? clamp(
               taskReliability *
-                  60 +
+                60 +
                 matchConsistency *
-                  40,
+                  0.4,
             )
           : matchConsistency;
 
-      /* -------------------------- PENALTY ------------------------------ */
+      /**
+       * Correct the units of the 60/40 formula.
+       *
+       * taskReliability is 0-1,
+       * matchConsistency is 0-100.
+       */
+      const finalConsistency =
+        totalSubmissions > 0
+          ? clamp(
+              taskReliability *
+                60 +
+                matchConsistency *
+                0.40,
+            )
+          : matchConsistency;
+
+      /* --------------------------- PENALTY ------------------------------ */
 
       /**
-       * Existing missed-task penalty.
+       * Additional penalty for incomplete tasks.
        *
-       * This is separate from taskScore.
-       * Therefore an incomplete task:
-       *   - receives 0 task points
-       *   - can also receive the existing missed-task penalty
+       * Important:
+       * incomplete/failed task already has 0 task points,
+       * and the existing missed-task penalty remains separate.
        */
       const penalty =
         assigned > 0
@@ -824,16 +845,14 @@ export function computeMeritIndex(
             MAX_MISS_PENALTY
           : 0;
 
-      /* ---------------------------- MERIT ------------------------------ */
+      /* ----------------------------- MERIT ------------------------------ */
 
       /**
-       * FINAL FORMULA
+       * FINAL WEIGHTAGE:
        *
        * 45% Tasks
        * 40% Individual Performance
        * 15% Consistency
-       *
-       * Placement = 0%
        */
       const merit =
         clamp(
@@ -841,14 +860,11 @@ export function computeMeritIndex(
             W_TASK +
           performance *
             W_PERFORMANCE +
-          consistency *
+          finalConsistency *
             W_CONSISTENCY -
           penalty,
         );
 
-      /**
-       * Sample weight is informational only.
-       */
       const sampleWeight =
         aggregate.matches > 0
           ? aggregate.matches /
@@ -860,7 +876,6 @@ export function computeMeritIndex(
 
       return {
         player,
-
         rank: 0,
 
         merit:
@@ -880,7 +895,8 @@ export function computeMeritIndex(
 
         consistency:
           Math.round(
-            consistency * 10,
+            finalConsistency *
+              10,
           ) / 10,
 
         penalty:
@@ -890,8 +906,10 @@ export function computeMeritIndex(
 
         assigned,
         completed,
+
         attempted_not_passed:
           attemptedNotPassed,
+
         missed,
         extra_passes:
           extraPasses,
@@ -929,7 +947,8 @@ export function computeMeritIndex(
           ) / 100,
 
         /**
-         * NEVER used in calculation.
+         * Explicitly zero.
+         * Placement is team performance.
          */
         avg_placement_points: 0,
 
@@ -981,10 +1000,4 @@ export function computeMeritIndex(
 
 /* -------------------------------------------------------------------------- */
 /* MERIT TIERS                                                                */
-/* -------------------------------------------------------------------------- */
-
-export function meritTier(
-  merit: number,
-): {
-  label: string;
-  className: 
+/* ------------------------
