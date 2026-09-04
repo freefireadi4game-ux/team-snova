@@ -51,7 +51,10 @@ export function BenchmarkUploader({
         return;
       }
 
-      const stats = parseBenchmarkOCR(ocrResult);
+      const stats = parseBenchmarkOCR(
+        ocrResult,
+        benchmark.source_type,
+      );
 
       const result = evaluateBenchmark(
         benchmark.requirements,

@@ -703,6 +703,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      merit_task_stats: {
+        Args: never
+        Returns: {
+          assigned: number
+          attempted_not_passed: number
+          completed: number
+          pass_submissions: number
+          player_id: string
+          total_submissions: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "player"

@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1788489147250,
+      "tag": "0000_merit_task_stats_function",
+      "breakpoints": true
+    }
+  ]
+}
