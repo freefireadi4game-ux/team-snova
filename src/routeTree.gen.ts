@@ -25,10 +25,9 @@ import { Route as TournamentsIdRouteImport } from './routes/tournaments.$id'
 import { Route as PlayersIdRouteImport } from './routes/players.$id'
 import { Route as MapsIdRouteImport } from './routes/maps.$id'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
-import { Route as AuthenticatedBenchmarksRouteImport } from './routes/_authenticated/benchmarks'
+import { Route as BenchmarksIdRouteImport } from './routes/benchmarks.$id'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
-import { Route as AuthenticatedBenchmarksIdRouteImport } from './routes/_authenticated/benchmarks.$id'
 import { Route as AuthenticatedAdminTournamentsRouteImport } from './routes/_authenticated/admin.tournaments'
 import { Route as AuthenticatedAdminPoisRouteImport } from './routes/_authenticated/admin.pois'
 import { Route as AuthenticatedAdminPlayersRouteImport } from './routes/_authenticated/admin.players'
@@ -117,10 +116,10 @@ const JoinTokenRoute = JoinTokenRouteImport.update({
   path: '/join/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedBenchmarksRoute = AuthenticatedBenchmarksRouteImport.update({
-  id: '/benchmarks',
-  path: '/benchmarks',
-  getParentRoute: () => AuthenticatedRoute,
+const BenchmarksIdRoute = BenchmarksIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => BenchmarksRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
@@ -132,12 +131,6 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
-const AuthenticatedBenchmarksIdRoute =
-  AuthenticatedBenchmarksIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedBenchmarksRoute,
-  } as any)
 const AuthenticatedAdminTournamentsRoute =
   AuthenticatedAdminTournamentsRouteImport.update({
     id: '/tournaments',
@@ -190,11 +183,12 @@ export interface FileRoutesByFullPath {
   '/achievements': typeof AchievementsRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
-  '/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
+  '/benchmarks': typeof BenchmarksRouteWithChildren
   '/compare': typeof CompareRoute
   '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/benchmarks/$id': typeof BenchmarksIdRoute
   '/join/$token': typeof JoinTokenRoute
   '/maps/$id': typeof MapsIdRoute
   '/players/$id': typeof PlayersIdRoute
@@ -209,7 +203,6 @@ export interface FileRoutesByFullPath {
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
   '/admin/pois': typeof AuthenticatedAdminPoisRoute
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
-  '/benchmarks/$id': typeof AuthenticatedBenchmarksIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/tournaments/$id': typeof AuthenticatedAdminTournamentsIdRoute
 }
@@ -218,10 +211,11 @@ export interface FileRoutesByTo {
   '/achievements': typeof AchievementsRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
-  '/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
+  '/benchmarks': typeof BenchmarksRouteWithChildren
   '/compare': typeof CompareRoute
   '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
+  '/benchmarks/$id': typeof BenchmarksIdRoute
   '/join/$token': typeof JoinTokenRoute
   '/maps/$id': typeof MapsIdRoute
   '/players/$id': typeof PlayersIdRoute
@@ -236,7 +230,6 @@ export interface FileRoutesByTo {
   '/admin/players': typeof AuthenticatedAdminPlayersRoute
   '/admin/pois': typeof AuthenticatedAdminPoisRoute
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
-  '/benchmarks/$id': typeof AuthenticatedBenchmarksIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/tournaments/$id': typeof AuthenticatedAdminTournamentsIdRoute
 }
@@ -247,12 +240,12 @@ export interface FileRoutesById {
   '/achievements': typeof AchievementsRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
-  '/benchmarks': typeof BenchmarksRoute
+  '/benchmarks': typeof BenchmarksRouteWithChildren
   '/compare': typeof CompareRoute
   '/player-login': typeof PlayerLoginRoute
   '/stats': typeof StatsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
-  '/_authenticated/benchmarks': typeof AuthenticatedBenchmarksRouteWithChildren
+  '/benchmarks/$id': typeof BenchmarksIdRoute
   '/join/$token': typeof JoinTokenRoute
   '/maps/$id': typeof MapsIdRoute
   '/players/$id': typeof PlayersIdRoute
@@ -267,7 +260,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/players': typeof AuthenticatedAdminPlayersRoute
   '/_authenticated/admin/pois': typeof AuthenticatedAdminPoisRoute
   '/_authenticated/admin/tournaments': typeof AuthenticatedAdminTournamentsRouteWithChildren
-  '/_authenticated/benchmarks/$id': typeof AuthenticatedBenchmarksIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/tournaments/$id': typeof AuthenticatedAdminTournamentsIdRoute
 }
@@ -283,6 +275,7 @@ export interface FileRouteTypes {
     | '/player-login'
     | '/stats'
     | '/admin'
+    | '/benchmarks/$id'
     | '/join/$token'
     | '/maps/$id'
     | '/players/$id'
@@ -297,7 +290,6 @@ export interface FileRouteTypes {
     | '/admin/players'
     | '/admin/pois'
     | '/admin/tournaments'
-    | '/benchmarks/$id'
     | '/admin/'
     | '/admin/tournaments/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -310,6 +302,7 @@ export interface FileRouteTypes {
     | '/compare'
     | '/player-login'
     | '/stats'
+    | '/benchmarks/$id'
     | '/join/$token'
     | '/maps/$id'
     | '/players/$id'
@@ -324,7 +317,6 @@ export interface FileRouteTypes {
     | '/admin/players'
     | '/admin/pois'
     | '/admin/tournaments'
-    | '/benchmarks/$id'
     | '/admin'
     | '/admin/tournaments/$id'
   id:
@@ -339,7 +331,7 @@ export interface FileRouteTypes {
     | '/player-login'
     | '/stats'
     | '/_authenticated/admin'
-    | '/_authenticated/benchmarks'
+    | '/benchmarks/$id'
     | '/join/$token'
     | '/maps/$id'
     | '/players/$id'
@@ -354,7 +346,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/players'
     | '/_authenticated/admin/pois'
     | '/_authenticated/admin/tournaments'
-    | '/_authenticated/benchmarks/$id'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/tournaments/$id'
   fileRoutesById: FileRoutesById
@@ -365,7 +356,7 @@ export interface RootRouteChildren {
   AchievementsRoute: typeof AchievementsRoute
   AnalyticsRoute: typeof AnalyticsRoute
   AuthRoute: typeof AuthRoute
-  BenchmarksRoute: typeof BenchmarksRoute
+  BenchmarksRoute: typeof BenchmarksRouteWithChildren
   CompareRoute: typeof CompareRoute
   PlayerLoginRoute: typeof PlayerLoginRoute
   StatsRoute: typeof StatsRoute
@@ -492,12 +483,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JoinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/benchmarks': {
-      id: '/_authenticated/benchmarks'
-      path: '/benchmarks'
-      fullPath: '/benchmarks'
-      preLoaderRoute: typeof AuthenticatedBenchmarksRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/benchmarks/$id': {
+      id: '/benchmarks/$id'
+      path: '/$id'
+      fullPath: '/benchmarks/$id'
+      preLoaderRoute: typeof BenchmarksIdRouteImport
+      parentRoute: typeof BenchmarksRoute
     }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
@@ -512,13 +503,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/benchmarks/$id': {
-      id: '/_authenticated/benchmarks/$id'
-      path: '/$id'
-      fullPath: '/benchmarks/$id'
-      preLoaderRoute: typeof AuthenticatedBenchmarksIdRouteImport
-      parentRoute: typeof AuthenticatedBenchmarksRoute
     }
     '/_authenticated/admin/tournaments': {
       id: '/_authenticated/admin/tournaments'
@@ -619,32 +603,28 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
-interface AuthenticatedBenchmarksRouteChildren {
-  AuthenticatedBenchmarksIdRoute: typeof AuthenticatedBenchmarksIdRoute
-}
-
-const AuthenticatedBenchmarksRouteChildren: AuthenticatedBenchmarksRouteChildren =
-  {
-    AuthenticatedBenchmarksIdRoute: AuthenticatedBenchmarksIdRoute,
-  }
-
-const AuthenticatedBenchmarksRouteWithChildren =
-  AuthenticatedBenchmarksRoute._addFileChildren(
-    AuthenticatedBenchmarksRouteChildren,
-  )
-
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
-  AuthenticatedBenchmarksRoute: typeof AuthenticatedBenchmarksRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
-  AuthenticatedBenchmarksRoute: AuthenticatedBenchmarksRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
+)
+
+interface BenchmarksRouteChildren {
+  BenchmarksIdRoute: typeof BenchmarksIdRoute
+}
+
+const BenchmarksRouteChildren: BenchmarksRouteChildren = {
+  BenchmarksIdRoute: BenchmarksIdRoute,
+}
+
+const BenchmarksRouteWithChildren = BenchmarksRoute._addFileChildren(
+  BenchmarksRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -653,7 +633,7 @@ const rootRouteChildren: RootRouteChildren = {
   AchievementsRoute: AchievementsRoute,
   AnalyticsRoute: AnalyticsRoute,
   AuthRoute: AuthRoute,
-  BenchmarksRoute: BenchmarksRoute,
+  BenchmarksRoute: BenchmarksRouteWithChildren,
   CompareRoute: CompareRoute,
   PlayerLoginRoute: PlayerLoginRoute,
   StatsRoute: StatsRoute,
