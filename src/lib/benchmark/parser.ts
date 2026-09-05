@@ -66,11 +66,19 @@ function match(text: string, patterns: RegExp[], group = 1): number | null {
 
 /**
  * Tesseract regularly drops the decimal point in small HUD text
- * ("1.42" -> "142"). A K/D ratio is realistically between 0 and 30, so a
- * dot-less value above that is rescaled.
+ * ("1.42" -> "142", "8.93" -> "893"). Dot-less readings are rescaled so every
+ * pass agrees on the same value.
  */
-function fixRatio(value: number | null, max = 30): number | null {
+function fixDecimal(
+  raw: string | undefined,
+  max: number,
+): number | null {
+  const value = toNumber(raw);
   if (value === null) return null;
+
+  if (raw && raw.includes(".")) {
+    return value <= max ? Number(value.toFixed(2)) : null;
+  }
 
   let n = value;
   let guard = 0;
@@ -81,6 +89,22 @@ function fixRatio(value: number | null, max = 30): number | null {
   }
 
   return Number(n.toFixed(2));
+}
+
+function matchDecimal(
+  text: string,
+  patterns: RegExp[],
+  max: number,
+): number | null {
+  for (const pattern of patterns) {
+    const m = text.match(pattern);
+    if (m) {
+      const value = fixDecimal(m[1], max);
+      if (value !== null) return value;
+    }
+  }
+
+  return null;
 }
 
 /* -------------------------------------------------------------------------- */
