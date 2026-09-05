@@ -23,141 +23,88 @@ type OCRPass = {
   height: number;
 };
 
-function canvasToBlob(
-  canvas: HTMLCanvasElement,
-): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (blob) {
-          resolve(blob);
-        } else {
-          reject(
-            new Error("Could not prepare image for OCR."),
-          );
-        }
-      },
-      "image/png",
-      1,
-    );
-  });
-}
-
 async function loadImage(
   source: File | Blob | string,
 ): Promise<HTMLImageElement> {
   const image = new Image();
-
   image.decoding = "async";
 
-  if (typeof source === "string") {
-    image.src = source;
-  } else {
-    image.src = URL.createObjectURL(source);
-  }
+  const objectUrl =
+    typeof source === "string" ? null : URL.createObjectURL(source);
+
+  image.src = objectUrl ?? (source as string);
 
   try {
     await image.decode();
   } catch {
     await new Promise<void>((resolve, reject) => {
       image.onload = () => resolve();
-      image.onerror = () =>
-        reject(
-          new Error("Could not load screenshot."),
-        );
+      image.onerror = () => reject(new Error("Could not load screenshot."));
     });
   }
 
-  if (typeof source !== "string") {
-    URL.revokeObjectURL(image.src);
-  }
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
 
   return image;
 }
 
+type Preprocess = "upscaled" | "threshold-light" | "threshold-dark";
+
+/**
+ * Game HUD text is thin, small and sits on busy backgrounds. Upscaling with a
+ * grayscale/threshold pass massively improves Tesseract's hit rate.
+ */
 function drawPreprocessed(
   image: HTMLImageElement,
-  mode: "enhanced" | "high-contrast",
+  mode: Preprocess,
 ): HTMLCanvasElement {
-  const maxWidth = 2600;
+  const targetWidth = 2400;
 
   const scale = Math.min(
-    4,
-    Math.max(
-      1.5,
-      maxWidth / Math.max(image.naturalWidth, 1),
-    ),
+    3,
+    Math.max(1.6, targetWidth / Math.max(image.naturalWidth, 1)),
   );
 
-  const width = Math.max(
-    1,
-    Math.round(image.naturalWidth * scale),
-  );
-
-  const height = Math.max(
-    1,
-    Math.round(image.naturalHeight * scale),
-  );
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
 
-  const ctx = canvas.getContext("2d", {
-    willReadFrequently: true,
-  });
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
   if (!ctx) {
-    throw new Error(
-      "Your browser could not prepare the screenshot.",
-    );
+    throw new Error("Your browser could not prepare the screenshot.");
   }
 
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(image, 0, 0, width, height);
 
-  const imageData = ctx.getImageData(
-    0,
-    0,
-    width,
-    height,
-  );
-
+  const imageData = ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-
-    // Perceived luminance.
     const gray =
-      0.299 * r +
-      0.587 * g +
-      0.114 * b;
+      0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
 
-    if (mode === "enhanced") {
-      // Stronger contrast while preserving enough grey detail
-      // for small HUD text.
-      const contrast = 1.65;
-      const centered =
-        (gray - 128) * contrast + 128;
+    let value: number;
 
-      const value = Math.max(
-        0,
-        Math.min(255, centered),
-      );
-
-      data[i] = value;
-      data[i + 1] = value;
-      data[i + 2] = value;
+    if (mode === "upscaled") {
+      const centered = (gray - 128) * 1.35 + 128;
+      value = Math.max(0, Math.min(255, centered));
+    } else if (mode === "threshold-light") {
+      // White HUD text on darker background.
+      value = gray > 140 ? 255 : 0;
     } else {
-      // High contrast threshold for small white UI text.
-      const value = gray > 145 ? 255 : 0;
-
-      data[i] = value;
-      data[i + 1] = value;
-      data[i + 2] = value;
+      // Same threshold, inverted: dark glyphs on light background.
+      value = gray > 140 ? 0 : 255;
     }
+
+    data[i] = value;
+    data[i + 1] = value;
+    data[i + 2] = value;
   }
 
   ctx.putImageData(imageData, 0, 0);
@@ -165,53 +112,32 @@ function drawPreprocessed(
   return canvas;
 }
 
-function chooseBetterPass(
-  passes: OCRPass[],
-): OCRPass {
-  return passes
-    .slice()
-    .sort((a, b) => {
-      const aUseful =
-        a.words.length * 2 +
-        Math.min(a.text.length, 3000) / 100 +
-        a.confidence / 10;
-
-      const bUseful =
-        b.words.length * 2 +
-        Math.min(b.text.length, 3000) / 100 +
-        b.confidence / 10;
-
-      return bUseful - aUseful;
-    })[0];
-}
-
 async function recognize(
   worker: Tesseract.Worker,
   source: File | Blob | HTMLCanvasElement,
+  pageSegMode: string,
 ): Promise<OCRPass> {
+  await worker.setParameters({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tessedit_pageseg_mode: pageSegMode as any,
+  });
+
   const result = await worker.recognize(source);
 
   const words: OCRWord[] =
-    result.data.words?.map((word: any) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (result.data.words as any[] | undefined)?.map((word: any) => ({
       text: String(word.text ?? "").trim(),
-
       confidence:
-        typeof word.confidence === "number"
-          ? word.confidence
-          : undefined,
-
+        typeof word.confidence === "number" ? word.confidence : undefined,
       left: word.bbox?.x0,
       top: word.bbox?.y0,
-
       width:
-        typeof word.bbox?.x1 === "number" &&
-        typeof word.bbox?.x0 === "number"
+        typeof word.bbox?.x1 === "number" && typeof word.bbox?.x0 === "number"
           ? word.bbox.x1 - word.bbox.x0
           : undefined,
-
       height:
-        typeof word.bbox?.y1 === "number" &&
-        typeof word.bbox?.y0 === "number"
+        typeof word.bbox?.y1 === "number" && typeof word.bbox?.y0 === "number"
           ? word.bbox.y1 - word.bbox.y0
           : undefined,
     })) ?? [];
@@ -220,101 +146,58 @@ async function recognize(
     .map((word) => word.confidence)
     .filter(
       (value): value is number =>
-        typeof value === "number" &&
-        Number.isFinite(value),
+        typeof value === "number" && Number.isFinite(value),
     );
 
   const confidence = confidenceValues.length
-    ? confidenceValues.reduce(
-        (sum, value) => sum + value,
-        0,
-      ) / confidenceValues.length
+    ? confidenceValues.reduce((sum, value) => sum + value, 0) /
+      confidenceValues.length
     : Number(result.data.confidence ?? 0);
 
   return {
     text: String(result.data.text ?? ""),
     words,
-    confidence: Number.isFinite(confidence)
-      ? confidence
-      : 0,
-    width: Number(
-      (result.data as any).image?.width ?? 0,
-    ),
-    height: Number(
-      (result.data as any).image?.height ?? 0,
-    ),
+    confidence: Number.isFinite(confidence) ? confidence : 0,
+    width: 0,
+    height: 0,
   };
 }
 
+/**
+ * PSM 11 (sparse text) is by far the best mode for scattered HUD numbers,
+ * PSM 6 (uniform block) recovers table rows and decimal points. Both are run
+ * over two preprocessed variants and the parser merges the readings.
+ */
 export async function runBrowserOCR(
   source: File | Blob | string,
 ): Promise<OCRResult> {
   if (typeof window === "undefined") {
-    throw new Error(
-      "Browser OCR is only available on the client.",
-    );
+    throw new Error("Browser OCR is only available on the client.");
   }
 
   const worker = await getWorker();
   const image = await loadImage(source);
 
+  const upscaled = drawPreprocessed(image, "upscaled");
+  const light = drawPreprocessed(image, "threshold-light");
+  const dark = drawPreprocessed(image, "threshold-dark");
+
+  const plan: { canvas: HTMLCanvasElement; psm: string }[] = [
+    { canvas: upscaled, psm: "11" },
+    { canvas: upscaled, psm: "6" },
+    { canvas: light, psm: "11" },
+    { canvas: light, psm: "6" },
+    { canvas: dark, psm: "11" },
+  ];
+
   const passes: OCRPass[] = [];
 
-  // Pass 1: Original screenshot.
-  try {
-    const original = await recognize(
-      worker,
-      source instanceof File || source instanceof Blob
-        ? source
-        : image,
-    );
-
-    passes.push(original);
-  } catch (error) {
-    console.warn(
-      "[benchmark OCR] original pass failed",
-      error,
-    );
-  }
-
-  // Pass 2: Upscaled + enhanced grayscale.
-  try {
-    const enhancedCanvas = drawPreprocessed(
-      image,
-      "enhanced",
-    );
-
-    const enhanced = await recognize(
-      worker,
-      enhancedCanvas,
-    );
-
-    passes.push(enhanced);
-  } catch (error) {
-    console.warn(
-      "[benchmark OCR] enhanced pass failed",
-      error,
-    );
-  }
-
-  // Pass 3: Strong black/white threshold.
-  try {
-    const highContrastCanvas = drawPreprocessed(
-      image,
-      "high-contrast",
-    );
-
-    const highContrast = await recognize(
-      worker,
-      highContrastCanvas,
-    );
-
-    passes.push(highContrast);
-  } catch (error) {
-    console.warn(
-      "[benchmark OCR] high-contrast pass failed",
-      error,
-    );
+  for (const step of plan) {
+    try {
+      passes.push(await recognize(worker, step.canvas, step.psm));
+    } catch (error) {
+      console.warn("[benchmark OCR] pass failed", step.psm, error);
+    }
   }
 
   if (!passes.length) {
@@ -323,20 +206,22 @@ export async function runBrowserOCR(
     );
   }
 
-  const best = chooseBetterPass(passes);
+  const best = passes
+    .slice()
+    .sort(
+      (a, b) =>
+        b.words.length * 2 +
+        b.confidence / 10 -
+        (a.words.length * 2 + a.confidence / 10),
+    )[0];
 
   return {
     text: best.text,
+    texts: passes.map((pass) => pass.text),
     words: best.words,
-    confidence: best.confidence,
-    width:
-      best.width ||
-      image.naturalWidth ||
-      0,
-    height:
-      best.height ||
-      image.naturalHeight ||
-      0,
+    confidence: Math.max(...passes.map((pass) => pass.confidence), 0),
+    width: image.naturalWidth || 0,
+    height: image.naturalHeight || 0,
   };
 }
 
