@@ -71,6 +71,8 @@ export type OCRWord = {
 
 export type OCRResult = {
   text: string;
+  /** Raw text of every recognition pass (different preprocessing / page modes). */
+  texts?: string[];
   words: OCRWord[];
   confidence: number;
   width: number;

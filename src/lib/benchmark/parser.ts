@@ -43,10 +43,6 @@ function toNumber(raw: string | undefined): number | null {
 }
 
 function first(...values: (number | null | undefined)[]): number | null {
-  for (const value in values) {
-    void value;
-  }
-
   for (const value of values) {
     if (value !== null && value !== undefined && Number.isFinite(value)) {
       return value;
