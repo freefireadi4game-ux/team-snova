@@ -146,23 +146,26 @@ function parseTrainingText(raw: string): Partial<ExtractedBenchmarkStats> {
   const text = labelText(raw);
 
   const damage = match(text, [
-    /total damage\D{0,12}([0-9][0-9, ]{2,9})/,
-    /\bdamage\D{0,12}([0-9][0-9, ]{2,9})/,
+    /total damage\D{0,12}([0-9]{3,7}(?:,[0-9]{3})*)\b/,
+    /\bdamage\D{0,12}([0-9]{3,7}(?:,[0-9]{3})*)\b/,
   ]);
 
-  const headshotRate = fixRatio(
-    match(text, [
-      /headshot rate\D{0,12}([0-9]{1,3}(?:\.[0-9]{1,2})?)\s*%?/,
-      /\bhsr\D{0,12}([0-9]{1,3}(?:\.[0-9]{1,2})?)\s*%?/,
-    ]),
+  const headshotRate = matchDecimal(
+    text,
+    [
+      /headshot rate\D{0,12}([0-9]{1,5}(?:\.[0-9]{1,2})?)\s*%?/,
+      /\bhsr\D{0,12}([0-9]{1,5}(?:\.[0-9]{1,2})?)\s*%?/,
+    ],
     100,
   );
 
-  const kd = fixRatio(
-    match(text, [
+  const kd = matchDecimal(
+    text,
+    [
       /k\s*\/?\s*d\s*ratio\D{0,12}([0-9]{1,4}(?:\.[0-9]{1,2})?)/,
       /k\s*\/?\s*d\D{0,12}([0-9]{1,4}(?:\.[0-9]{1,2})?)/,
-    ]),
+    ],
+    30,
   );
 
   /*
@@ -193,21 +196,51 @@ function parseTrainingText(raw: string): Partial<ExtractedBenchmarkStats> {
     ]),
   );
 
+  const deaths = match(text, [/eliminated\D{0,12}([0-9]{1,4})\b/]);
+  const rank = match(text, [/\brank\D{0,10}([0-9]{1,3})\b/]);
+
   /*
-   * The big number in the diamond: "168 ELIMINATIONS".
-   * "ELIMINATED" (deaths) must never be used for it.
+   * The big number inside the diamond ("168 ELIMINATIONS") is often separated
+   * from its label by other panel text, so the closest plausible integer to
+   * the ELIMINATIONS token is used. "ELIMINATED" (deaths) is never eligible.
    */
   const kills = first(
     match(text, [
       /\b([0-9]{1,4})\s+eliminations\b/,
-      /eliminations\D{0,10}([0-9]{1,4})\b/,
-      /\beliminations?\b[^0-9]{0,10}([0-9]{1,4})/,
+      /eliminations\s+([0-9]{1,4})\b/,
     ]),
-    // Kills = deaths * K/D as a last resort (both are printed on this screen).
     (() => {
-      const eliminated = match(text, [/eliminated\D{0,12}([0-9]{1,4})\b/]);
-      if (eliminated === null || kd === null || kd <= 0) return null;
-      return Math.round(eliminated * kd);
+      const tokens = text.split(" ");
+
+      const labelIndex = tokens.findIndex((token) => token === "eliminations");
+      if (labelIndex < 0) return null;
+
+      const excluded = new Set(
+        [damage, headshots, streak, deaths, rank].filter(
+          (value): value is number => value !== null,
+        ),
+      );
+
+      let bestValue: number | null = null;
+      let bestDistance = Infinity;
+
+      tokens.forEach((token, index) => {
+        if (!/^[0-9]{2,4}$/.test(token)) return;
+
+        const value = Number(token);
+        if (value < 10 || value > 9999) return;
+        if (excluded.has(value)) return;
+
+        const distance = Math.abs(index - labelIndex);
+        if (distance > 8) return;
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestValue = value;
+        }
+      });
+
+      return bestValue;
     })(),
   );
 
