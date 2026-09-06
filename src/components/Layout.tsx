@@ -12,6 +12,7 @@ import {
   Medal,
   UserRound,
   Award,
+  ListChecks,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import {
@@ -53,6 +54,11 @@ const NAV = [
     to: "/merit",
     label: "Merit Index",
     icon: Award,
+  },
+  {
+    to: "/benchmarks",
+    label: "My Tasks",
+    icon: ListChecks,
   },
   {
     to: "/achievements",

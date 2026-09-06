@@ -122,11 +122,21 @@ async function recognize(
     tessedit_pageseg_mode: pageSegMode as any,
   });
 
-  const result = await worker.recognize(source);
+  const result = await worker.recognize(source, {}, { blocks: true, text: true });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = result.data as any;
+
+  const rawWords: any[] =
+    data.words ??
+    (data.blocks ?? []).flatMap((block: any) =>
+      (block.paragraphs ?? []).flatMap((paragraph: any) =>
+        (paragraph.lines ?? []).flatMap((line: any) => line.words ?? []),
+      ),
+    );
 
   const words: OCRWord[] =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (result.data.words as any[] | undefined)?.map((word: any) => ({
+    rawWords?.map((word: any) => ({
       text: String(word.text ?? "").trim(),
       confidence:
         typeof word.confidence === "number" ? word.confidence : undefined,

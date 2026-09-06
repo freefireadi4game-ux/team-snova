@@ -1000,4 +1000,27 @@ export function computeMeritIndex(
 
 /* -------------------------------------------------------------------------- */
 /* MERIT TIERS                                                                */
-/* ------------------------
+/* -------------------------------------------------------------------------- */
+
+export function meritTier(merit: number): {
+  label: string;
+  className: string;
+} {
+  if (merit >= 85) {
+    return { label: "Elite", className: "text-neon" };
+  }
+
+  if (merit >= 70) {
+    return { label: "Strong", className: "text-emerald-400" };
+  }
+
+  if (merit >= 55) {
+    return { label: "Stable", className: "text-sky-400" };
+  }
+
+  if (merit >= 40) {
+    return { label: "Developing", className: "text-yellow-400" };
+  }
+
+  return { label: "Needs Work", className: "text-destructive" };
+}
