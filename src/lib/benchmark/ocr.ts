@@ -122,11 +122,11 @@ async function recognize(
     tessedit_pageseg_mode: pageSegMode as any,
   });
 
-  const result = await worker.recognize(source);
+  const result = await worker.recognize(source, {}, { blocks: true, text: true });
 
   const words: OCRWord[] =
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (result.data.words as any[] | undefined)?.map((word: any) => ({
+    ((result.data as any).words as any[] | undefined)?.map((word: any) => ({
       text: String(word.text ?? "").trim(),
       confidence:
         typeof word.confidence === "number" ? word.confidence : undefined,
