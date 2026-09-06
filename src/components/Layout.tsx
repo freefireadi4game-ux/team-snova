@@ -55,6 +55,11 @@ const NAV = [
     icon: Award,
   },
   {
+    to: "/benchmarks",
+    label: "My Tasks",
+    icon: ListChecks,
+  },
+  {
     to: "/achievements",
     label: "Achievements",
     icon: Medal,
