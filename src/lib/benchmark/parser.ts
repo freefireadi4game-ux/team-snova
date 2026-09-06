@@ -427,39 +427,92 @@ const NUMERIC_KEYS = [
   "kd_ratio",
 ] as const;
 
+/**
+ * Not every OCR pass reads the panel correctly — some collapse the layout and
+ * swap the diamond number with the K/D tile. Each pass therefore gets a
+ * coherence score, and the most self-consistent pass becomes the base reading.
+ */
+function candidateQuality(
+  candidate: Partial<ExtractedBenchmarkStats>,
+): number {
+  const num = (value: unknown): number | null =>
+    typeof value === "number" && Number.isFinite(value) ? value : null;
+
+  const kills = num(candidate.kills);
+  const damage = num(candidate.damage);
+  const kd = num(candidate.kd_ratio);
+  const rate = num(candidate.headshot_rate);
+  const headshots = num(candidate.headshots);
+  const streak = num(candidate.elimination_streak);
+  const placement = num(candidate.placement);
+  const assists = num(candidate.assists);
+
+  let score = 0;
+
+  if (damage !== null && damage >= 1000) score += 3;
+  else if (damage !== null && damage >= 300) score += 1;
+
+  if (kd !== null && kd > 0 && kd <= 10) score += 2;
+  if (rate !== null && rate > 0 && rate <= 100) score += 1;
+
+  if (kills !== null && damage !== null && damage >= kills * 100) score += 2;
+  if (kills !== null && headshots !== null && kills >= headshots) score += 1;
+
+  if (streak !== null) score += 1;
+  if (placement !== null) score += 1;
+  if (assists !== null) score += 1;
+
+  return score;
+}
+
 function mergeCandidates(
   candidates: Partial<ExtractedBenchmarkStats>[],
 ): Partial<ExtractedBenchmarkStats> {
+  const ranked = candidates
+    .map((candidate, index) => ({
+      candidate,
+      index,
+      quality: candidateQuality(candidate),
+    }))
+    .sort((a, b) => b.quality - a.quality || a.index - b.index);
+
+  const base = ranked[0]?.candidate ?? {};
   const merged: Partial<ExtractedBenchmarkStats> = {};
 
   for (const key of NUMERIC_KEYS) {
-    const values = candidates
-      .map((candidate) => candidate[key])
-      .filter(
-        (value): value is number =>
-          typeof value === "number" && Number.isFinite(value),
-      );
+    const baseValue = base[key];
 
-    if (!values.length) continue;
-
-    // Most frequently agreed reading wins; ties fall back to the first pass.
-    const counts = new Map<number, number>();
-    for (const value of values) {
-      counts.set(value, (counts.get(value) ?? 0) + 1);
+    if (typeof baseValue === "number" && Number.isFinite(baseValue)) {
+      (merged as Record<string, unknown>)[key] = baseValue;
+      continue;
     }
 
-    let bestValue = values[0];
-    let bestCount = 0;
+    // Missing in the best pass: weighted majority across the remaining passes.
+    const weights = new Map<number, number>();
 
-    for (const value of values) {
-      const count = counts.get(value) ?? 0;
-      if (count > bestCount) {
-        bestCount = count;
+    for (const entry of ranked) {
+      const value = entry.candidate[key];
+      if (typeof value !== "number" || !Number.isFinite(value)) continue;
+
+      weights.set(
+        value,
+        (weights.get(value) ?? 0) + 1 + entry.quality / 10,
+      );
+    }
+
+    let bestValue: number | null = null;
+    let bestWeight = 0;
+
+    for (const [value, weight] of weights) {
+      if (weight > bestWeight) {
+        bestWeight = weight;
         bestValue = value;
       }
     }
 
-    (merged as Record<string, unknown>)[key] = bestValue;
+    if (bestValue !== null) {
+      (merged as Record<string, unknown>)[key] = bestValue;
+    }
   }
 
   return merged;
