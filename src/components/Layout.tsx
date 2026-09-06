@@ -12,6 +12,7 @@ import {
   Medal,
   UserRound,
   Award,
+  ListChecks,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import {
