@@ -57,6 +57,12 @@ export type Benchmark = {
   role: PlayerRole | "all";
   created_at?: string;
   updated_at?: string;
+  /** How often the task repeats — daily tasks reset every day. */
+  frequency?: BenchmarkFrequency;
+  scheduled_date?: string | null;
+  scheduled_day?: number | null;
+  scheduled_time?: string | null;
+  is_active?: boolean;
   requirements: BenchmarkRequirement[];
 };
 
