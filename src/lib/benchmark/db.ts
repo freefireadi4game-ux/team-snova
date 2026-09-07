@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type {
   Benchmark,
+  BenchmarkFrequency,
   BenchmarkEvaluation,
   BenchmarkMetric,
   BenchmarkOperator,
@@ -39,6 +40,11 @@ export async function listBenchmarksFromDb(): Promise<Benchmark[]> {
     role: row.role as PlayerRole | "all",
     created_at: row.created_at,
     updated_at: row.updated_at,
+    frequency: (row.frequency ?? "once") as BenchmarkFrequency,
+    scheduled_date: row.scheduled_date ?? null,
+    scheduled_day: row.scheduled_day ?? null,
+    scheduled_time: row.scheduled_time ?? null,
+    is_active: row.is_active ?? true,
     requirements: (reqs ?? [])
       .filter((r) => r.benchmark_id === row.id)
       .map(
@@ -117,4 +123,84 @@ export async function saveSubmission(
       .insert(rows);
     if (resultError) throw resultError;
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* REPEAT / RESET LOGIC                                                       */
+/* -------------------------------------------------------------------------- */
+
+export function frequencyLabel(frequency: BenchmarkFrequency | undefined) {
+  switch (frequency) {
+    case "daily":
+      return "Repeats daily";
+    case "weekly":
+      return "Repeats weekly";
+    case "monthly":
+      return "Repeats monthly";
+    default:
+      return "One-time task";
+  }
+}
+
+/** Start of the current repeat window (local time). */
+export function periodStart(frequency: BenchmarkFrequency | undefined): Date {
+  const now = new Date();
+
+  if (frequency === "daily") {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+
+  if (frequency === "weekly") {
+    const day = now.getDay();
+    // Week starts on Monday.
+    const offset = (day + 6) % 7;
+    return new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - offset,
+    );
+  }
+
+  if (frequency === "monthly") {
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  return new Date(0);
+}
+
+export function periodResetLabel(frequency: BenchmarkFrequency | undefined) {
+  switch (frequency) {
+    case "daily":
+      return "today";
+    case "weekly":
+      return "this week";
+    case "monthly":
+      return "this month";
+    default:
+      return "";
+  }
+}
+
+/** Submissions that fall inside the current repeat window of a benchmark. */
+export function submissionsInPeriod(
+  submissions: BenchmarkSubmission[],
+  benchmark: Pick<Benchmark, "id" | "frequency">,
+): BenchmarkSubmission[] {
+  const start = periodStart(benchmark.frequency).getTime();
+
+  return submissions.filter(
+    (submission) =>
+      submission.benchmark_id === benchmark.id &&
+      new Date(submission.submitted_at).getTime() >= start,
+  );
+}
+
+/** True when the task is already passed inside its current repeat window. */
+export function isCompletedForPeriod(
+  submissions: BenchmarkSubmission[],
+  benchmark: Pick<Benchmark, "id" | "frequency">,
+): boolean {
+  return submissionsInPeriod(submissions, benchmark).some(
+    (submission) => submission.status === "pass",
+  );
 }
