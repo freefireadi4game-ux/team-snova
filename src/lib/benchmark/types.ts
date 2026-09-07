@@ -31,6 +31,9 @@ export type BenchmarkMetric =
 
 export type BenchmarkStatus = "draft" | "active" | "inactive";
 
+/** Repeat cadence of a task. Daily tasks must be re-submitted every day. */
+export type BenchmarkFrequency = "once" | "daily" | "weekly" | "monthly";
+
 export type BenchmarkEvidenceStatus =
   | "pass"
   | "fail"
