@@ -161,9 +161,14 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          frequency: string | null
           id: string
+          is_active: boolean | null
           name: string
           role: string
+          scheduled_date: string | null
+          scheduled_day: number | null
+          scheduled_time: string | null
           source_type: string
           status: string
           updated_at: string
@@ -171,9 +176,14 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          frequency?: string | null
           id?: string
+          is_active?: boolean | null
           name: string
           role?: string
+          scheduled_date?: string | null
+          scheduled_day?: number | null
+          scheduled_time?: string | null
           source_type?: string
           status?: string
           updated_at?: string
@@ -181,9 +191,14 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          frequency?: string | null
           id?: string
+          is_active?: boolean | null
           name?: string
           role?: string
+          scheduled_date?: string | null
+          scheduled_day?: number | null
+          scheduled_time?: string | null
           source_type?: string
           status?: string
           updated_at?: string

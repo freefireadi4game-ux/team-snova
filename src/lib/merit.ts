@@ -2,30 +2,21 @@ import { didPlay, listPlayers, type Player } from "@/lib/data";
 import { listStatEntries, type StatEntry } from "@/lib/stats-core";
 
 /**
- * MERIT INDEX
+ * MERIT INDEX — deterministic 0-100 individual rating.
  *
- * FINAL WEIGHTAGE:
- *   45% Tasks
- *   40% Individual Performance
- *   15% Consistency
+ * Components (weights renormalised when a component has no data):
+ *   45% Tasks           — assigned daily/weekly task performance
+ *   40% Performance     — role-aware individual averages vs roster average
+ *   15% Consistency     — task reliability + match output stability
  *
- * INDIVIDUAL PERFORMANCE:
- *   - Average Kills
- *   - Average Damage
- *   - Average Assists
- *   - K/D-style metric
- *
- * RULES:
- *   - Placement is TEAM performance -> NOT USED.
- *   - Match count does NOT directly add Merit.
- *   - Task completed -> points.
- *   - Task incomplete -> 0 points.
- *   - Task failed -> 0 points.
- *   - NO partial credit.
- *
- * NOTE:
- * Current database does not contain deaths in match_stats.
- * Therefore avg_kd currently uses kills per played match.
+ * Fairness rules:
+ *   - Placement is TEAM output -> never used.
+ *   - Volume (match count / submission count) never adds points.
+ *   - Attempted-but-not-passed tasks earn partial credit.
+ *   - Untouched tasks are the only source of penalty.
+ *   - Small match samples are shrunk toward the neutral 50 baseline.
+ *   - A player with no assigned tasks is not punished: the task weight is
+ *     redistributed over the remaining components.
  */
 
 export type MeritTaskStatsRow = {
@@ -60,110 +51,57 @@ export type MeritRow = {
   avg_assists: number;
   avg_kd: number;
 
-  /**
-   * Kept only for compatibility with existing UI/data types.
-   * Placement is never used in Merit.
-   */
+  /** Placement is team output — always 0, kept for UI compatibility. */
   avg_placement_points: number;
 
-  /**
-   * Informational only.
-   * Never adds Merit points.
-   */
+  /** Informational sample confidence (0-1). Never adds Merit by itself. */
   sample_weight: number;
 };
 
 /* -------------------------------------------------------------------------- */
-/* FIXED MERIT WEIGHTS                                                        */
+/* WEIGHTS                                                                    */
 /* -------------------------------------------------------------------------- */
 
-const W_TASK = 0.45;
-const W_PERFORMANCE = 0.40;
-const W_CONSISTENCY = 0.15;
+const W_TASK = 45;
+const W_PERFORMANCE = 40;
+const W_CONSISTENCY = 15;
 
-const MAX_MISS_PENALTY = 12;
+/** Partial credit for a task that was attempted but not passed. */
+const PARTIAL_CREDIT = 0.4;
+
+/** Capped bonus for verified extra passes beyond the assigned tasks. */
 const MAX_EXTRA_BONUS = 8;
 
-/**
- * Only informational sample value.
- * Match count does not directly award Merit.
- */
-const SAMPLE_K = 8;
+/** Capped penalty for assigned tasks the player never even attempted. */
+const MAX_MISS_PENALTY = 12;
+
+/** Shrinkage constant: small match samples move toward the neutral 50. */
+const SAMPLE_K = 4;
+
+const NEUTRAL = 50;
 
 /* -------------------------------------------------------------------------- */
-/* ROLE WEIGHTS                                                               */
+/* ROLE WEIGHTS (kills / damage / assists)                                    */
 /* -------------------------------------------------------------------------- */
 
-type RoleWeights = {
-  kills: number;
-  damage: number;
-  assists: number;
-  kd: number;
-};
+type RoleWeights = { kills: number; damage: number; assists: number };
 
-function roleWeights(
-  role: string,
-): RoleWeights {
-  switch (
-    role
-      .trim()
-      .toLowerCase()
-  ) {
+function roleWeights(role: string): RoleWeights {
+  switch (role.trim().toLowerCase()) {
     case "igl":
-      return {
-        kills: 0.15,
-        damage: 0.25,
-        assists: 0.30,
-        kd: 0.30,
-      };
-
+      return { kills: 0.3, damage: 0.35, assists: 0.35 };
     case "rusher":
-      return {
-        kills: 0.40,
-        damage: 0.25,
-        assists: 0.10,
-        kd: 0.25,
-      };
-
+      return { kills: 0.5, damage: 0.35, assists: 0.15 };
     case "fragger":
-      return {
-        kills: 0.45,
-        damage: 0.25,
-        assists: 0.05,
-        kd: 0.25,
-      };
-
+      return { kills: 0.55, damage: 0.35, assists: 0.1 };
     case "sniper":
-      return {
-        kills: 0.35,
-        damage: 0.35,
-        assists: 0.05,
-        kd: 0.25,
-      };
-
+      return { kills: 0.45, damage: 0.45, assists: 0.1 };
     case "support":
-      return {
-        kills: 0.15,
-        damage: 0.30,
-        assists: 0.30,
-        kd: 0.25,
-      };
-
+      return { kills: 0.25, damage: 0.35, assists: 0.4 };
     case "flex":
-      return {
-        kills: 0.30,
-        damage: 0.25,
-        assists: 0.15,
-        kd: 0.30,
-      };
-
+      return { kills: 0.4, damage: 0.35, assists: 0.25 };
     default:
-      return {
-        kills: 0.30,
-        damage: 0.25,
-        assists: 0.15,
-        kd: 0.30,
-      };
+      return { kills: 0.4, damage: 0.35, assists: 0.25 };
   }
 }
 
@@ -171,105 +109,48 @@ function roleWeights(
 /* HELPERS                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function clamp(
-  value: number,
-  min = 0,
-  max = 100,
-): number {
-  return Math.min(
-    max,
-    Math.max(min, value),
-  );
+function clamp(value: number, min = 0, max = 100): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
 }
 
-function mean(
-  values: number[],
-): number {
-  if (!values.length) {
-    return 0;
-  }
+function mean(values: number[]): number {
+  if (!values.length) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
 
-  return (
-    values.reduce(
-      (sum, value) =>
-        sum + value,
-      0,
-    ) / values.length
-  );
+function round(value: number, digits = 1): number {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
 }
 
 /**
- * Score an individual average against the roster average.
- *
- * Roster average = 50
- * 2x roster average = 100
- * 0x roster average = 0
- *
- * This avoids min/max normalization and avoids match-count
- * shrinkage changing the actual performance order.
+ * Roster average -> 50, twice the roster average -> 100, zero -> 0.
+ * With no usable roster baseline everyone sits at the neutral score.
  */
-function relativeScore(
-  value: number,
-  rosterAverage: number,
-): number {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-
-  if (
-    !Number.isFinite(
-      rosterAverage,
-    ) ||
-    rosterAverage <= 0
-  ) {
-    return 50;
-  }
-
-  return clamp(
-    (value /
-      rosterAverage) *
-      50,
-  );
+function relativeScore(value: number, rosterAverage: number): number {
+  if (!Number.isFinite(value)) return 0;
+  if (!Number.isFinite(rosterAverage) || rosterAverage <= 0) return NEUTRAL;
+  return clamp((value / rosterAverage) * NEUTRAL);
 }
 
 /* -------------------------------------------------------------------------- */
 /* TASK DATA                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export async function listMeritTaskStats(): Promise<
-  MeritTaskStatsRow[]
-> {
+export async function listMeritTaskStats(): Promise<MeritTaskStatsRow[]> {
   try {
-    const { supabase } =
-      await import(
-        "@/integrations/supabase/client"
-      );
-
-    const {
-      data,
-      error,
-    } = await supabase.rpc(
-      "merit_task_stats",
-    );
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase.rpc("merit_task_stats");
 
     if (error) {
-      console.warn(
-        "[Merit] Task stats unavailable:",
-        error.message,
-      );
-
+      console.warn("[Merit] Task stats unavailable:", error.message);
       return [];
     }
 
-    return (
-      data ?? []
-    ) as MeritTaskStatsRow[];
+    return (data ?? []) as MeritTaskStatsRow[];
   } catch (error) {
-    console.warn(
-      "[Merit] Task stats unavailable:",
-      error,
-    );
-
+    console.warn("[Merit] Task stats unavailable:", error);
     return [];
   }
 }
@@ -284,29 +165,18 @@ export type MeritSource = {
   entries: StatEntry[];
 };
 
-export async function loadMeritSource(): Promise<
-  MeritSource
-> {
-  const [
-    players,
-    taskStats,
-    entries,
-  ] = await Promise.all([
+export async function loadMeritSource(): Promise<MeritSource> {
+  const [players, taskStats, entries] = await Promise.all([
     listPlayers(),
     listMeritTaskStats(),
     listStatEntries(),
   ]);
 
-  return {
-    players:
-      players as Player[],
-    taskStats,
-    entries,
-  };
+  return { players: players as Player[], taskStats, entries };
 }
 
 /* -------------------------------------------------------------------------- */
-/* PLAYER AGGREGATION                                                         */
+/* AGGREGATION                                                                */
 /* -------------------------------------------------------------------------- */
 
 type PlayerAggregate = {
@@ -314,72 +184,37 @@ type PlayerAggregate = {
   kills: number;
   damage: number;
   assists: number;
-
-  /**
-   * Individual output per match.
-   * Placement is never included.
-   */
+  /** Individual output per match (no placement). */
   matchOutput: number[];
 };
 
 function aggregatePlayers(
   players: Player[],
   entries: StatEntry[],
-): Map<
-  string,
-  PlayerAggregate
-> {
-  const map =
-    new Map<
-      string,
-      PlayerAggregate
-    >();
+): Map<string, PlayerAggregate> {
+  const map = new Map<string, PlayerAggregate>();
 
   for (const player of players) {
-    map.set(
-      player.id,
-      {
-        matches: 0,
-        kills: 0,
-        damage: 0,
-        assists: 0,
-        matchOutput: [],
-      },
-    );
+    map.set(player.id, {
+      matches: 0,
+      kills: 0,
+      damage: 0,
+      assists: 0,
+      matchOutput: [],
+    });
   }
 
   for (const entry of entries) {
-    const aggregate =
-      map.get(
-        entry.player_id,
-      );
-
-    if (!aggregate) {
-      continue;
-    }
-
-    if (!didPlay(entry)) {
-      continue;
-    }
+    const aggregate = map.get(entry.player_id);
+    if (!aggregate) continue;
+    if (!didPlay(entry)) continue;
 
     aggregate.matches += 1;
-    aggregate.kills +=
-      entry.kills;
-    aggregate.damage +=
-      entry.damage;
-    aggregate.assists +=
-      entry.assists;
-
-    /**
-     * Individual consistency only.
-     *
-     * Placement is intentionally absent.
-     */
+    aggregate.kills += entry.kills;
+    aggregate.damage += entry.damage;
+    aggregate.assists += entry.assists;
     aggregate.matchOutput.push(
-      entry.kills +
-        entry.assists +
-        entry.damage /
-          1000,
+      entry.kills + entry.assists * 0.5 + entry.damage / 1000,
     );
   }
 
@@ -387,613 +222,215 @@ function aggregatePlayers(
 }
 
 /* -------------------------------------------------------------------------- */
-/* MAIN MERIT CALCULATION                                                     */
+/* MAIN CALCULATION                                                           */
 /* -------------------------------------------------------------------------- */
 
-export function computeMeritIndex(
-  source: MeritSource,
-): MeritRow[] {
-  const players =
-    source.players
-      .filter(
-        (player) =>
-          player.status ===
-          "active",
-      )
-      .slice()
-      .sort((a, b) =>
-        a.id.localeCompare(
-          b.id,
-        ),
-      );
+export function computeMeritIndex(source: MeritSource): MeritRow[] {
+  const players = source.players
+    .filter((player) => player.status === "active")
+    .slice()
+    .sort((a, b) => a.id.localeCompare(b.id));
 
-  const aggregates =
-    aggregatePlayers(
-      players,
-      source.entries,
-    );
+  const aggregates = aggregatePlayers(players, source.entries);
 
-  const taskMap =
-    new Map<
-      string,
-      MeritTaskStatsRow
-    >(
-      source.taskStats.map(
-        (row) => [
-          row.player_id,
-          row,
-        ],
-      ),
-    );
+  const taskMap = new Map<string, MeritTaskStatsRow>(
+    source.taskStats.map((row) => [row.player_id, row]),
+  );
 
-  const playedPlayers =
-    players.filter(
-      (player) =>
-        (
-          aggregates.get(
-            player.id,
-          )?.matches ?? 0
-        ) > 0,
-    );
-
-  /* ---------------------------------------------------------------------- */
-  /* AVERAGE HELPERS                                                        */
-  /* ---------------------------------------------------------------------- */
+  const playedPlayers = players.filter(
+    (player) => (aggregates.get(player.id)?.matches ?? 0) > 0,
+  );
 
   const averageStat = (
     player: Player,
-    stat:
-      | "kills"
-      | "damage"
-      | "assists",
+    stat: "kills" | "damage" | "assists",
   ): number => {
-    const aggregate =
-      aggregates.get(
-        player.id,
-      );
-
-    if (
-      !aggregate ||
-      aggregate.matches <= 0
-    ) {
-      return 0;
-    }
-
-    return (
-      aggregate[stat] /
-      aggregate.matches
-    );
+    const aggregate = aggregates.get(player.id);
+    if (!aggregate || aggregate.matches <= 0) return 0;
+    return aggregate[stat] / aggregate.matches;
   };
 
-  /**
-   * Current DB has no deaths.
-   *
-   * Current available K/D-style metric:
-   * kills per played match.
-   */
-  const avgKd = (
-    player: Player,
-  ): number => {
-    return averageStat(
-      player,
-      "kills",
-    );
-  };
+  const rosterAverageKills = mean(
+    playedPlayers.map((player) => averageStat(player, "kills")),
+  );
+  const rosterAverageDamage = mean(
+    playedPlayers.map((player) => averageStat(player, "damage")),
+  );
+  const rosterAverageAssists = mean(
+    playedPlayers.map((player) => averageStat(player, "assists")),
+  );
 
-  /* ---------------------------------------------------------------------- */
-  /* ROSTER AVERAGES                                                        */
-  /* ---------------------------------------------------------------------- */
+  const rows: MeritRow[] = players.map((player) => {
+    const aggregate = aggregates.get(player.id)!;
+    const task = taskMap.get(player.id);
 
-  const rosterAverageKills =
-    mean(
-      playedPlayers.map(
-        (player) =>
-          averageStat(
-            player,
-            "kills",
-          ),
-      ),
+    /* ------------------------------- TASKS ------------------------------- */
+
+    const assigned = Math.max(0, task?.assigned ?? 0);
+
+    const completed = Math.min(Math.max(0, task?.completed ?? 0), assigned);
+
+    const attemptedNotPassed = Math.min(
+      Math.max(0, task?.attempted_not_passed ?? 0),
+      Math.max(0, assigned - completed),
     );
 
-  const rosterAverageDamage =
-    mean(
-      playedPlayers.map(
-        (player) =>
-          averageStat(
-            player,
-            "damage",
-          ),
-      ),
-    );
+    const missed = Math.max(0, assigned - completed);
 
-  const rosterAverageAssists =
-    mean(
-      playedPlayers.map(
-        (player) =>
-          averageStat(
-            player,
-            "assists",
-          ),
-      ),
-    );
+    /** Assigned tasks with no submission at all. */
+    const untouched = Math.max(0, assigned - completed - attemptedNotPassed);
 
-  const rosterAverageKd =
-    mean(
-      playedPlayers.map(
-        avgKd,
-      ),
-    );
-
-  /* ---------------------------------------------------------------------- */
-  /* PERFORMANCE SCORE                                                      */
-  /* ---------------------------------------------------------------------- */
-
-  const performanceMap =
-    new Map<
-      string,
-      number
-    >();
-
-  for (const player of players) {
-    const aggregate =
-      aggregates.get(
-        player.id,
-      );
-
-    if (
-      !aggregate ||
-      aggregate.matches <= 0
-    ) {
-      performanceMap.set(
-        player.id,
-        0,
-      );
-
-      continue;
-    }
-
-    const weights =
-      roleWeights(
-        player.role,
-      );
+    const passSubmissions = Math.max(0, task?.pass_submissions ?? 0);
+    const totalSubmissions = Math.max(0, task?.total_submissions ?? 0);
+    const extraPasses = Math.max(0, passSubmissions - completed);
 
     /**
-     * Every metric uses the player's average.
-     *
-     * NO placement.
-     * NO total volume.
-     * NO match-count bonus.
+     * Completed tasks earn full credit, attempted-but-below-target tasks earn
+     * partial credit, untouched tasks earn nothing.
      */
-    const killsScore =
-      relativeScore(
-        averageStat(
-          player,
-          "kills",
-        ),
-        rosterAverageKills,
-      );
-
-    const damageScore =
-      relativeScore(
-        averageStat(
-          player,
-          "damage",
-        ),
-        rosterAverageDamage,
-      );
-
-    const assistsScore =
-      relativeScore(
-        averageStat(
-          player,
-          "assists",
-        ),
-        rosterAverageAssists,
-      );
-
-    const kdScore =
-      relativeScore(
-        avgKd(player),
-        rosterAverageKd,
-      );
-
-    const performance =
-      killsScore *
-        weights.kills +
-      damageScore *
-        weights.damage +
-      assistsScore *
-        weights.assists +
-      kdScore *
-        weights.kd;
-
-    performanceMap.set(
-      player.id,
-      clamp(performance),
-    );
-  }
-
-  /* ---------------------------------------------------------------------- */
-  /* FINAL ROWS                                                             */
-  /* ---------------------------------------------------------------------- */
-
-  const rows: MeritRow[] =
-    players.map((player) => {
-      const aggregate =
-        aggregates.get(
-          player.id,
-        )!;
-
-      const task =
-        taskMap.get(
-          player.id,
-        );
-
-      /* ---------------------------- TASKS ----------------------------- */
-
-      const assigned =
-        Math.max(
-          0,
-          task?.assigned ?? 0,
-        );
-
-      const completed =
-        Math.min(
-          Math.max(
-            0,
-            task?.completed ?? 0,
-          ),
-          assigned,
-        );
-
-      const attemptedNotPassed =
-        Math.max(
-          0,
-          task?.attempted_not_passed ??
-            0,
-        );
-
-      /**
-       * Every uncompleted task remains uncompleted,
-       * regardless of whether it was attempted.
-       */
-      const missed =
-        Math.max(
-          0,
-          assigned -
-            completed,
-        );
-
-      const passSubmissions =
-        Math.max(
-          0,
-          task?.pass_submissions ??
-            0,
-        );
-
-      const totalSubmissions =
-        Math.max(
-          0,
-          task?.total_submissions ??
-            0,
-        );
-
-      const extraPasses =
-        Math.max(
-          0,
-          passSubmissions -
-            completed,
-        );
-
-      /**
-       * TASK RULE:
-       *
-       * Only completed tasks receive points.
-       * Every incomplete/failed task = 0.
-       * NO partial credit.
-       *
-       * Example:
-       *   5 assigned / 3 completed = 60 task score
-       *   5 assigned / 0 completed = 0 task score
-       */
-      const taskScore =
-        assigned > 0
-          ? clamp(
-              (
-                completed /
-                assigned
-              ) *
-                100,
-            )
-          : 0;
-
-      /* ------------------------ PERFORMANCE ---------------------------- */
-
-      const performance =
-        aggregate.matches > 0
-          ? performanceMap.get(
-              player.id,
-            ) ?? 0
-          : 0;
-
-      /* ------------------------- CONSISTENCY ---------------------------- */
-
-      /**
-       * Task reliability:
-       *
-       * No completed task attempts = 0.
-       * Once real task data exists, pass rate matters.
-       */
-      const taskReliability =
-        totalSubmissions > 0
-          ? clamp(
-              passSubmissions /
-                totalSubmissions,
-              0,
-              1,
-            )
-          : 0;
-
-      /**
-       * Individual match consistency.
-       *
-       * No placement.
-       */
-      let matchConsistency =
-        0;
-
-      if (
-        aggregate.matches === 1
-      ) {
-        /**
-         * With only one match there is no spread to measure.
-         * Use a neutral consistency score.
-         */
-        matchConsistency = 50;
-      } else if (
-        aggregate.matches >= 2
-      ) {
-        const average =
-          mean(
-            aggregate.matchOutput,
-          );
-
-        const variance =
-          mean(
-            aggregate.matchOutput.map(
-              (value) =>
-                (
-                  value -
-                  average
-                ) ** 2,
-            ),
-          );
-
-        const standardDeviation =
-          Math.sqrt(
-            variance,
-          );
-
-        const coefficient =
-          average > 0
-            ? standardDeviation /
-              average
-            : 1;
-
-        matchConsistency =
-          clamp(
-            (
-              1 -
-              Math.min(
-                1,
-                coefficient,
-              )
-            ) *
+    const taskScore =
+      assigned > 0
+        ? clamp(
+            ((completed + attemptedNotPassed * PARTIAL_CREDIT) / assigned) *
               100,
-          );
-      }
+          )
+        : 0;
 
-      /**
-       * Before tasks are active:
-       *   consistency = individual match consistency
-       *
-       * Once task submissions exist:
-       *   60% task reliability
-       *   40% individual match consistency
-       */
-      const consistency =
-        totalSubmissions > 0
-          ? clamp(
-              taskReliability *
-                60 +
-                matchConsistency *
-                  0.4,
-            )
-          : matchConsistency;
+    /* ---------------------------- PERFORMANCE ---------------------------- */
 
-      /**
-       * Correct the units of the 60/40 formula.
-       *
-       * taskReliability is 0-1,
-       * matchConsistency is 0-100.
-       */
-      const finalConsistency =
-        totalSubmissions > 0
-          ? clamp(
-              taskReliability *
-                60 +
-                matchConsistency *
-                0.40,
-            )
-          : matchConsistency;
+    let performance = 0;
 
-      /* --------------------------- PENALTY ------------------------------ */
+    if (aggregate.matches > 0) {
+      const weights = roleWeights(player.role);
 
-      /**
-       * Additional penalty for incomplete tasks.
-       *
-       * Important:
-       * incomplete/failed task already has 0 task points,
-       * and the existing missed-task penalty remains separate.
-       */
-      const penalty =
-        assigned > 0
-          ? (
-              missed /
-              assigned
-            ) *
-            MAX_MISS_PENALTY
-          : 0;
+      const raw =
+        relativeScore(averageStat(player, "kills"), rosterAverageKills) *
+          weights.kills +
+        relativeScore(averageStat(player, "damage"), rosterAverageDamage) *
+          weights.damage +
+        relativeScore(averageStat(player, "assists"), rosterAverageAssists) *
+          weights.assists;
 
-      /* ----------------------------- MERIT ------------------------------ */
+      /** Shrink small samples toward the neutral baseline (fairness). */
+      const confidence =
+        aggregate.matches / (aggregate.matches + SAMPLE_K);
 
-      /**
-       * FINAL WEIGHTAGE:
-       *
-       * 45% Tasks
-       * 40% Individual Performance
-       * 15% Consistency
-       */
-      const merit =
-        clamp(
-          taskScore *
-            W_TASK +
-          performance *
-            W_PERFORMANCE +
-          finalConsistency *
-            W_CONSISTENCY -
-          penalty,
-        );
+      performance = clamp(NEUTRAL + (raw - NEUTRAL) * confidence);
+    }
 
-      const sampleWeight =
-        aggregate.matches > 0
-          ? aggregate.matches /
-            (
-              aggregate.matches +
-              SAMPLE_K
-            )
-          : 0;
+    /* ---------------------------- CONSISTENCY ---------------------------- */
 
-      return {
-        player,
-        rank: 0,
+    const taskReliability =
+      totalSubmissions > 0
+        ? clamp((passSubmissions / totalSubmissions) * 100)
+        : 0;
 
-        merit:
-          Math.round(
-            merit * 10,
-          ) / 10,
+    let matchConsistency = 0;
 
-        task_score:
-          Math.round(
-            taskScore * 10,
-          ) / 10,
+    if (aggregate.matches === 1) {
+      matchConsistency = NEUTRAL;
+    } else if (aggregate.matches >= 2) {
+      const average = mean(aggregate.matchOutput);
+      const variance = mean(
+        aggregate.matchOutput.map((value) => (value - average) ** 2),
+      );
+      const coefficient =
+        average > 0 ? Math.sqrt(variance) / average : 1;
 
-        performance_score:
-          Math.round(
-            performance * 10,
-          ) / 10,
+      matchConsistency = clamp((1 - Math.min(1, coefficient)) * 100);
+    }
 
-        consistency:
-          Math.round(
-            finalConsistency *
-              10,
-          ) / 10,
+    let consistency: number;
 
-        penalty:
-          Math.round(
-            penalty * 10,
-          ) / 10,
+    if (totalSubmissions > 0 && aggregate.matches > 0) {
+      consistency = clamp(taskReliability * 0.6 + matchConsistency * 0.4);
+    } else if (totalSubmissions > 0) {
+      consistency = taskReliability;
+    } else {
+      consistency = matchConsistency;
+    }
 
-        assigned,
-        completed,
+    /* ------------------------ WEIGHT RENORMALISATION ---------------------- */
 
-        attempted_not_passed:
-          attemptedNotPassed,
+    const hasTasks = assigned > 0;
+    const hasMatches = aggregate.matches > 0;
+    const hasConsistency = hasTasks || hasMatches;
 
-        missed,
-        extra_passes:
-          extraPasses,
+    let wTask = hasTasks ? W_TASK : 0;
+    let wPerformance = hasMatches ? W_PERFORMANCE : 0;
+    let wConsistency = hasConsistency ? W_CONSISTENCY : 0;
 
-        matches_played:
-          aggregate.matches,
+    const totalWeight = wTask + wPerformance + wConsistency;
 
-        avg_kills:
-          Math.round(
-            averageStat(
-              player,
-              "kills",
-            ) * 100,
-          ) / 100,
+    let base: number;
 
-        avg_damage:
-          Math.round(
-            averageStat(
-              player,
-              "damage",
-            ),
-          ),
+    if (totalWeight <= 0) {
+      base = 0;
+    } else {
+      wTask = (wTask / totalWeight) * 100;
+      wPerformance = (wPerformance / totalWeight) * 100;
+      wConsistency = (wConsistency / totalWeight) * 100;
 
-        avg_assists:
-          Math.round(
-            averageStat(
-              player,
-              "assists",
-            ) * 100,
-          ) / 100,
+      base =
+        (taskScore * wTask +
+          performance * wPerformance +
+          consistency * wConsistency) /
+        100;
+    }
 
-        avg_kd:
-          Math.round(
-            avgKd(player) * 100,
-          ) / 100,
+    /* ----------------------------- ADJUSTMENTS --------------------------- */
 
-        /**
-         * Explicitly zero.
-         * Placement is team performance.
-         */
-        avg_placement_points: 0,
+    const penalty =
+      assigned > 0 ? (untouched / assigned) * MAX_MISS_PENALTY : 0;
 
-        sample_weight:
-          Math.round(
-            sampleWeight * 100,
-          ) / 100,
-      };
-    });
+    const bonus =
+      assigned > 0 ? Math.min(MAX_EXTRA_BONUS, extraPasses * 2) : 0;
 
-  /* ---------------------------------------------------------------------- */
-  /* RANKING                                                                */
-  /* ---------------------------------------------------------------------- */
+    const merit = clamp(base - penalty + bonus);
+
+    const sampleWeight =
+      aggregate.matches > 0
+        ? aggregate.matches / (aggregate.matches + SAMPLE_K)
+        : 0;
+
+    return {
+      player,
+      rank: 0,
+      merit: round(merit),
+      task_score: round(taskScore),
+      performance_score: round(performance),
+      consistency: round(consistency),
+      penalty: round(penalty),
+      assigned,
+      completed,
+      attempted_not_passed: attemptedNotPassed,
+      missed,
+      extra_passes: extraPasses,
+      matches_played: aggregate.matches,
+      avg_kills: round(averageStat(player, "kills"), 2),
+      avg_damage: Math.round(averageStat(player, "damage")),
+      avg_assists: round(averageStat(player, "assists"), 2),
+      /** No deaths stored yet — kills per played match is the K/D-style proxy. */
+      avg_kd: round(averageStat(player, "kills"), 2),
+      avg_placement_points: 0,
+      sample_weight: round(sampleWeight, 2),
+    };
+  });
 
   rows.sort(
     (a, b) =>
-      b.merit -
-        a.merit ||
-
-      b.performance_score -
-        a.performance_score ||
-
-      b.avg_kd -
-        a.avg_kd ||
-
-      b.avg_kills -
-        a.avg_kills ||
-
-      b.avg_damage -
-        a.avg_damage ||
-
-      b.avg_assists -
-        a.avg_assists ||
-
-      a.player.ign.localeCompare(
-        b.player.ign,
-      ),
+      b.merit - a.merit ||
+      b.task_score - a.task_score ||
+      b.performance_score - a.performance_score ||
+      b.consistency - a.consistency ||
+      b.avg_kills - a.avg_kills ||
+      b.avg_damage - a.avg_damage ||
+      a.player.ign.localeCompare(b.player.ign),
   );
 
-  rows.forEach(
-    (row, index) => {
-      row.rank =
-        index + 1;
-    },
-  );
+  rows.forEach((row, index) => {
+    row.rank = index + 1;
+  });
 
   return rows;
 }

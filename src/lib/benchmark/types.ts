@@ -31,6 +31,9 @@ export type BenchmarkMetric =
 
 export type BenchmarkStatus = "draft" | "active" | "inactive";
 
+/** Repeat cadence of a task. Daily tasks must be re-submitted every day. */
+export type BenchmarkFrequency = "once" | "daily" | "weekly" | "monthly";
+
 export type BenchmarkEvidenceStatus =
   | "pass"
   | "fail"
@@ -57,6 +60,12 @@ export type Benchmark = {
   role: PlayerRole | "all";
   created_at?: string;
   updated_at?: string;
+  /** How often the task repeats — daily tasks reset every day. */
+  frequency?: BenchmarkFrequency;
+  scheduled_date?: string | null;
+  scheduled_day?: number | null;
+  scheduled_time?: string | null;
+  is_active?: boolean;
   requirements: BenchmarkRequirement[];
 };
 
