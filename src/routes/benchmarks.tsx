@@ -13,8 +13,11 @@ import { BenchmarkUploader } from "@/components/benchmark/BenchmarkUploader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAuthenticatedPlayer } from "@/lib/benchmark/player";
 import {
+  frequencyLabel,
+  isCompletedForPeriod,
   listBenchmarksFromDb,
   listMySubmissions,
+  periodResetLabel,
   saveSubmission,
 } from "@/lib/benchmark/db";
 import type { Benchmark, PlayerRole } from "@/lib/benchmark";
@@ -73,18 +76,21 @@ function BenchmarksPage() {
     enabled: !!player.data?.id,
   });
 
-  const passedIds = new Set(
-    (submissions.data ?? [])
-      .filter((s) => s.status === "pass")
-      .map((s) => s.benchmark_id),
-  );
+  const allSubmissions = submissions.data ?? [];
 
   const role = (player.data?.role ?? "Other") as PlayerRole;
 
   const visible = (benchmarks.data ?? []).filter(
     (b) =>
       b.status === "active" &&
+      b.is_active !== false &&
       (b.role === "all" || b.role === role),
+  );
+
+  const completedNow = new Set(
+    visible
+      .filter((b) => isCompletedForPeriod(allSubmissions, b))
+      .map((b) => b.id),
   );
 
   const busy =
@@ -130,7 +136,7 @@ function BenchmarksPage() {
           {player.data && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-neon-soft px-3 py-1.5 text-xs font-semibold text-neon">
               {player.data.ign} · {player.data.role} ·{" "}
-              {passedIds.size}/{visible.length} done
+              {completedNow.size}/{visible.length} done
             </div>
           )}
         </section>
@@ -176,7 +182,12 @@ function BenchmarksPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {visible.map((benchmark) => {
-              const completed = passedIds.has(benchmark.id);
+              const completed = completedNow.has(benchmark.id);
+              const repeats =
+                (benchmark.frequency ?? "once") !== "once";
+              const resetWord = periodResetLabel(
+                benchmark.frequency,
+              );
               const uploadOpen =
                 openUploadId === benchmark.id;
 
@@ -203,16 +214,32 @@ function BenchmarksPage() {
                     )}
 
                     {completed
-                      ? "View / Submit Again"
+                      ? "Upload Again"
                       : "Upload Screenshot"}
                   </button>
 
-                  {!completed && (
-                    <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
-                      <Upload className="h-3 w-3" />
-                      Opens OCR verification
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center justify-center gap-1 text-center text-[10px] text-muted-foreground">
+                    {completed ? (
+                      <>
+                        <CheckCircle2 className="h-3 w-3 text-neon" />
+                        {repeats
+                          ? `Done ${resetWord} · ${frequencyLabel(
+                              benchmark.frequency,
+                            ).toLowerCase()}`
+                          : "Task completed"}
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-3 w-3" />
+                        {repeats
+                          ? `${frequencyLabel(
+                              benchmark.frequency,
+                            )} · pending ${resetWord}`
+                          : "Opens OCR verification"}
+                      </>
+                    )}
+                  </div>
+
 
                   {uploadOpen && (
                     <div

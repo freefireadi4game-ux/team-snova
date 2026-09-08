@@ -23,6 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { frequencyLabel } from "@/lib/benchmark/db";
 import type {
   Benchmark,
   BenchmarkMetric,
@@ -98,6 +99,8 @@ function makeNewBenchmark(): Benchmark {
     source_type: "training",
     role: "all",
     status: "draft",
+    frequency: "once",
+    is_active: true,
     requirements: [createRequirement("training")],
   };
 }
@@ -117,7 +120,7 @@ function AdminBenchmarksPage() {
           supabase
             .from("benchmarks")
             .select(
-              "id,name,description,source_type,role,status,created_at,updated_at",
+              "id,name,description,source_type,role,status,created_at,updated_at,frequency,is_active",
             )
             .order("created_at", { ascending: true }),
 
@@ -141,6 +144,9 @@ function AdminBenchmarksPage() {
         status: row.status as Benchmark["status"],
         created_at: row.created_at,
         updated_at: row.updated_at,
+        frequency: (row.frequency ??
+          "once") as Benchmark["frequency"],
+        is_active: row.is_active ?? true,
         requirements: (reqs ?? [])
           .filter((req) => req.benchmark_id === row.id)
           .map(
@@ -329,31 +335,30 @@ function AdminBenchmarksPage() {
     try {
       let benchmarkId = editing.id;
 
+      const payload = {
+        name: editing.name.trim(),
+        description: editing.description?.trim() || null,
+        source_type: editing.source_type,
+        role: editing.role,
+        status: editing.status,
+        frequency: editing.frequency ?? "once",
+        is_active: editing.is_active !== false,
+      };
+
       if (benchmarkId) {
         const { error } = await supabase
           .from("benchmarks")
-          .update({
-            name: editing.name.trim(),
-            description: editing.description?.trim() || null,
-            source_type: editing.source_type,
-            role: editing.role,
-            status: editing.status,
-          })
+          .update(payload)
           .eq("id", benchmarkId);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
           .from("benchmarks")
-          .insert({
-            name: editing.name.trim(),
-            description: editing.description?.trim() || null,
-            source_type: editing.source_type,
-            role: editing.role,
-            status: editing.status,
-          })
+          .insert(payload)
           .select("id")
           .single();
+
 
         if (error) throw error;
 
@@ -481,7 +486,18 @@ function AdminBenchmarksPage() {
                       <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                         {benchmark.status}
                       </span>
+
+                      <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-neon">
+                        {frequencyLabel(benchmark.frequency)}
+                      </span>
+
+                      {benchmark.is_active === false && (
+                        <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-destructive">
+                          Paused
+                        </span>
+                      )}
                     </div>
+
 
                     {benchmark.description && (
                       <div className="mt-2 text-xs text-muted-foreground">
@@ -700,6 +716,76 @@ function AdminBenchmarksPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div>
+                <Label>Repeat</Label>
+
+                <Select
+                  value={editing.frequency ?? "once"}
+                  onValueChange={(value) =>
+                    updateEditing({
+                      frequency:
+                        value as Benchmark["frequency"],
+                    })
+                  }
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="once">
+                      One-time task
+                    </SelectItem>
+
+                    <SelectItem value="daily">
+                      Daily (resets every day)
+                    </SelectItem>
+
+                    <SelectItem value="weekly">
+                      Weekly (resets every Monday)
+                    </SelectItem>
+
+                    <SelectItem value="monthly">
+                      Monthly (resets on the 1st)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="mt-2 text-[11px] text-muted-foreground">
+                  Repeating tasks unlock again automatically when the
+                  new period starts.
+                </div>
+              </div>
+
+              <div>
+                <Label>Availability</Label>
+
+                <Select
+                  value={editing.is_active === false ? "off" : "on"}
+                  onValueChange={(value) =>
+                    updateEditing({
+                      is_active: value === "on",
+                    })
+                  }
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="on">
+                      Available to players
+                    </SelectItem>
+
+                    <SelectItem value="off">
+                      Paused
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+
 
               <div className="md:col-span-2">
                 <Label>Description</Label>
