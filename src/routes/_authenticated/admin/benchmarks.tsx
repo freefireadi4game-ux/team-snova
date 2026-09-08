@@ -355,6 +355,9 @@ function AdminBenchmarksPage() {
         const { data, error } = await supabase
           .from("benchmarks")
           .insert(payload)
+          .select("id")
+          .single();
+
 
         if (error) throw error;
 
