@@ -485,7 +485,18 @@ function AdminBenchmarksPage() {
                       <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                         {benchmark.status}
                       </span>
+
+                      <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-neon">
+                        {frequencyLabel(benchmark.frequency)}
+                      </span>
+
+                      {benchmark.is_active === false && (
+                        <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-destructive">
+                          Paused
+                        </span>
+                      )}
                     </div>
+
 
                     {benchmark.description && (
                       <div className="mt-2 text-xs text-muted-foreground">
