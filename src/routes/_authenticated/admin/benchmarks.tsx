@@ -143,6 +143,9 @@ function AdminBenchmarksPage() {
         status: row.status as Benchmark["status"],
         created_at: row.created_at,
         updated_at: row.updated_at,
+        frequency: (row.frequency ??
+          "once") as Benchmark["frequency"],
+        is_active: row.is_active ?? true,
         requirements: (reqs ?? [])
           .filter((req) => req.benchmark_id === row.id)
           .map(
