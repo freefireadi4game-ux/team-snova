@@ -705,6 +705,76 @@ function AdminBenchmarksPage() {
                 </Select>
               </div>
 
+              <div>
+                <Label>Repeat</Label>
+
+                <Select
+                  value={editing.frequency ?? "once"}
+                  onValueChange={(value) =>
+                    updateEditing({
+                      frequency:
+                        value as Benchmark["frequency"],
+                    })
+                  }
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="once">
+                      One-time task
+                    </SelectItem>
+
+                    <SelectItem value="daily">
+                      Daily (resets every day)
+                    </SelectItem>
+
+                    <SelectItem value="weekly">
+                      Weekly (resets every Monday)
+                    </SelectItem>
+
+                    <SelectItem value="monthly">
+                      Monthly (resets on the 1st)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="mt-2 text-[11px] text-muted-foreground">
+                  Repeating tasks unlock again automatically when the
+                  new period starts.
+                </div>
+              </div>
+
+              <div>
+                <Label>Availability</Label>
+
+                <Select
+                  value={editing.is_active === false ? "off" : "on"}
+                  onValueChange={(value) =>
+                    updateEditing({
+                      is_active: value === "on",
+                    })
+                  }
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="on">
+                      Available to players
+                    </SelectItem>
+
+                    <SelectItem value="off">
+                      Paused
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+
+
               <div className="md:col-span-2">
                 <Label>Description</Label>
 
