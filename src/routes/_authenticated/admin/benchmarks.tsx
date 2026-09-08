@@ -23,6 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { frequencyLabel } from "@/lib/benchmark/db";
 import type {
   Benchmark,
   BenchmarkMetric,
