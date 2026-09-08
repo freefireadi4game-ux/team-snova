@@ -98,6 +98,8 @@ function makeNewBenchmark(): Benchmark {
     source_type: "training",
     role: "all",
     status: "draft",
+    frequency: "once",
+    is_active: true,
     requirements: [createRequirement("training")],
   };
 }
