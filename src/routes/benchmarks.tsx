@@ -133,7 +133,7 @@ function BenchmarksPage() {
           {player.data && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-neon-soft px-3 py-1.5 text-xs font-semibold text-neon">
               {player.data.ign} · {player.data.role} ·{" "}
-              {passedIds.size}/{visible.length} done
+              {completedNow.size}/{visible.length} done
             </div>
           )}
         </section>
