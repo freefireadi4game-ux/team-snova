@@ -179,7 +179,12 @@ function BenchmarksPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {visible.map((benchmark) => {
-              const completed = passedIds.has(benchmark.id);
+              const completed = completedNow.has(benchmark.id);
+              const repeats =
+                (benchmark.frequency ?? "once") !== "once";
+              const resetWord = periodResetLabel(
+                benchmark.frequency,
+              );
               const uploadOpen =
                 openUploadId === benchmark.id;
 
@@ -206,16 +211,32 @@ function BenchmarksPage() {
                     )}
 
                     {completed
-                      ? "View / Submit Again"
+                      ? "Upload Again"
                       : "Upload Screenshot"}
                   </button>
 
-                  {!completed && (
-                    <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
-                      <Upload className="h-3 w-3" />
-                      Opens OCR verification
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center justify-center gap-1 text-center text-[10px] text-muted-foreground">
+                    {completed ? (
+                      <>
+                        <CheckCircle2 className="h-3 w-3 text-neon" />
+                        {repeats
+                          ? `Done ${resetWord} · ${frequencyLabel(
+                              benchmark.frequency,
+                            ).toLowerCase()}`
+                          : "Task completed"}
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-3 w-3" />
+                        {repeats
+                          ? `${frequencyLabel(
+                              benchmark.frequency,
+                            )} · pending ${resetWord}`
+                          : "Opens OCR verification"}
+                      </>
+                    )}
+                  </div>
+
 
                   {uploadOpen && (
                     <div
