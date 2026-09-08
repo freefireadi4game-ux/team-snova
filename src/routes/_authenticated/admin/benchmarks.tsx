@@ -119,7 +119,7 @@ function AdminBenchmarksPage() {
           supabase
             .from("benchmarks")
             .select(
-              "id,name,description,source_type,role,status,created_at,updated_at",
+              "id,name,description,source_type,role,status,created_at,updated_at,frequency,is_active",
             )
             .order("created_at", { ascending: true }),
 
