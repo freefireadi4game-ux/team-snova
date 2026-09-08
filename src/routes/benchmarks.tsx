@@ -73,18 +73,21 @@ function BenchmarksPage() {
     enabled: !!player.data?.id,
   });
 
-  const passedIds = new Set(
-    (submissions.data ?? [])
-      .filter((s) => s.status === "pass")
-      .map((s) => s.benchmark_id),
-  );
+  const allSubmissions = submissions.data ?? [];
 
   const role = (player.data?.role ?? "Other") as PlayerRole;
 
   const visible = (benchmarks.data ?? []).filter(
     (b) =>
       b.status === "active" &&
+      b.is_active !== false &&
       (b.role === "all" || b.role === role),
+  );
+
+  const completedNow = new Set(
+    visible
+      .filter((b) => isCompletedForPeriod(allSubmissions, b))
+      .map((b) => b.id),
   );
 
   const busy =
