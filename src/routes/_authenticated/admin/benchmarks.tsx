@@ -334,31 +334,27 @@ function AdminBenchmarksPage() {
     try {
       let benchmarkId = editing.id;
 
+      const payload = {
+        name: editing.name.trim(),
+        description: editing.description?.trim() || null,
+        source_type: editing.source_type,
+        role: editing.role,
+        status: editing.status,
+        frequency: editing.frequency ?? "once",
+        is_active: editing.is_active !== false,
+      };
+
       if (benchmarkId) {
         const { error } = await supabase
           .from("benchmarks")
-          .update({
-            name: editing.name.trim(),
-            description: editing.description?.trim() || null,
-            source_type: editing.source_type,
-            role: editing.role,
-            status: editing.status,
-          })
+          .update(payload)
           .eq("id", benchmarkId);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
           .from("benchmarks")
-          .insert({
-            name: editing.name.trim(),
-            description: editing.description?.trim() || null,
-            source_type: editing.source_type,
-            role: editing.role,
-            status: editing.status,
-          })
-          .select("id")
-          .single();
+          .insert(payload)
 
         if (error) throw error;
 
